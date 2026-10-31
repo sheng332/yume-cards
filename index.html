@@ -505,6 +505,71 @@ body.theme-mono .letter-dot{background:#141414;}
   display:grid;place-items:center;line-height:1;
 }
 body.theme-mono .letter-badge{background:#141414;}
+.letter-card.mine{background:var(--panel-bg);border-style:dashed;}
+.letter-reply{
+  align-self:flex-end;padding:6px 14px;border-radius:9px;
+  background:var(--accent);color:var(--accent-contrast);border:none;
+  font-size:12.5px;cursor:pointer;
+}
+.letter-pending{font-size:12px;color:var(--muted);}
+
+/* 朋友圈 */
+.moment-card{
+  padding:14px;border-radius:14px;background:var(--panel-bg);border:1px solid var(--line);
+  display:flex;flex-direction:column;gap:8px;flex:none;
+}
+.moment-head{display:flex;align-items:center;gap:10px;}
+.moment-head .avatar{width:38px;height:38px;font-size:13px;}
+.moment-who{display:flex;flex-direction:column;gap:2px;min-width:0;}
+.moment-who b{font-size:14px;}
+.moment-who span{font-size:11px;color:var(--muted);}
+.moment-text{font-size:14px;line-height:1.75;white-space:pre-wrap;word-break:break-word;}
+.moment-imgs{display:grid;grid-template-columns:repeat(3,1fr);gap:5px;}
+.moment-imgs img{width:100%;aspect-ratio:1/1;object-fit:cover;border-radius:9px;cursor:zoom-in;background:var(--line);}
+.moment-imgs.single{grid-template-columns:1fr;max-width:240px;}
+.moment-imgs.single img{aspect-ratio:auto;max-height:260px;object-fit:cover;}
+.moment-sticker{max-width:120px;border-radius:8px;}
+.moment-actions{display:flex;align-items:center;gap:16px;margin-top:2px;}
+.moment-action{
+  display:flex;align-items:center;gap:4px;padding:2px 0;border:none;background:transparent;
+  color:var(--muted);font-size:12px;cursor:pointer;
+}
+.moment-action.liked{color:var(--accent);}
+.moment-action svg{width:15px;height:15px;}
+.moment-likes{font-size:11.5px;color:var(--muted);line-height:1.6;word-break:break-word;}
+.moment-comments{
+  margin-top:2px;padding:8px 10px;border-radius:10px;background:var(--app-bg);
+  display:flex;flex-direction:column;gap:6px;
+}
+.moment-comment{font-size:12.5px;line-height:1.65;word-break:break-word;}
+.moment-comment b{font-weight:600;}
+.moment-cinput{display:flex;gap:6px;}
+.moment-cinput input{
+  flex:1;min-width:0;border:1px solid var(--input-border);background:var(--input-bg);
+  border-radius:8px;padding:7px 10px;font-size:12.5px;color:var(--text);outline:none;
+}
+.moment-cinput button{
+  flex:none;border:none;border-radius:8px;padding:0 12px;
+  background:var(--accent);color:var(--accent-contrast);font-size:12px;cursor:pointer;
+}
+.moment-empty{padding:36px 10px;text-align:center;color:var(--muted);font-size:13px;}
+.moment-sticker-picker{display:none;grid-template-columns:repeat(5,1fr);gap:6px;margin-top:8px;}
+.moment-sticker-picker.show{display:grid;}
+.moment-sticker-picker img{
+  width:100%;aspect-ratio:1/1;object-fit:contain;background:var(--panel-bg);
+  border-radius:8px;padding:3px;cursor:pointer;
+}
+.moment-sticker-picker img.sel{outline:2px solid var(--accent);}
+.moment-sticker{cursor:zoom-in;}
+.moment-imgs img[data-mdimg]{cursor:pointer;}
+body.theme-mono .moment-action.liked{color:#141414;}
+
+.field textarea{
+  width:100%;min-height:112px;padding:10px 13px;border-radius:11px;
+  background:var(--app-bg);border:1px solid var(--line);
+  color:var(--text);font-size:14px;line-height:1.7;outline:none;resize:vertical;
+}
+.field textarea:focus{border-color:var(--accent);}
 
 /* 通话卡片 */
 .call-card{
@@ -1501,6 +1566,17 @@ body.theme-mono .tab-item.active svg{color:#141414;}
       <span class="letter-badge" id="moreLetterBadge" hidden></span>
       <span class="badge-soon">打开</span>
     </div>
+    <div class="more-card" id="moreMomentsCard" role="button" tabindex="0">
+      <div class="mc-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="8.5" cy="9" r="1.4"/><path d="m4 17 5-5 4 4 3-3 4 4"/></svg>
+      </div>
+      <div class="mc-info">
+        <b>朋友圈</b>
+        <span>TA 会发动态，你也可以点赞、评论、发自己的动态</span>
+      </div>
+      <span class="letter-badge" id="moreMomentBadge" hidden></span>
+      <span class="badge-soon">打开</span>
+    </div>
     <p class="hint" style="padding:6px 2px;">更多新功能会陆续放在这里。</p>
   </div>
 </aside>
@@ -1509,12 +1585,30 @@ body.theme-mono .tab-item.active svg{color:#141414;}
 <aside class="drawer" id="letters">
   <div class="drawer-head">
     <h2>信件</h2>
+    <button class="icon-btn" id="btnWriteLetter" aria-label="写信">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>
+    </button>
     <button class="icon-btn" id="btnLetterCfg" aria-label="信件设置">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.6a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9c.2.44.62.75 1.1.87H21a2 2 0 1 1 0 4h-.09c-.48.12-.9.43-1.1.87z"/></svg>
     </button>
     <button class="icon-btn" id="btnCloseLetters">✕</button>
   </div>
   <div class="drawer-scroll" id="letterList"></div>
+</aside>
+
+<!-- ============ 朋友圈 ============ -->
+<aside class="drawer" id="moments">
+  <div class="drawer-head">
+    <h2>朋友圈</h2>
+    <button class="icon-btn" id="btnMomentPost" aria-label="发动态">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>
+    </button>
+    <button class="icon-btn" id="btnMomentCfg" aria-label="朋友圈设置">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.6a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9c.2.44.62.75 1.1.87H21a2 2 0 1 1 0 4h-.09c-.48.12-.9.43-1.1.87z"/></svg>
+    </button>
+    <button class="icon-btn" id="btnCloseMoments">✕</button>
+  </div>
+  <div class="drawer-scroll" id="momentList"></div>
 </aside>
 
 <!-- ============ 一起听歌 ============ -->
@@ -1573,6 +1667,7 @@ body.theme-mono .tab-item.active svg{color:#141414;}
 <input type="file" id="fontInput" accept=".ttf,.otf,.woff,.woff2,font/ttf,font/otf,font/woff,font/woff2" hidden>
 <input type="file" id="cssInput" accept=".css,text/css" hidden>
 <input type="file" id="imageMsgInput" accept="image/*" hidden>
+<input type="file" id="momentImgInput" accept="image/*" multiple hidden>
 <div class="img-viewer" id="imgViewer"><img id="imgViewerImg" alt="图片"><span class="img-viewer-close" id="imgViewerClose">✕</span></div>
 
 <script>
@@ -1641,8 +1736,21 @@ body.theme-mono .tab-item.active svg{color:#141414;}
       minCards: 3,
       maxCards: 6,
       allowEmoji: true,
-      allowSticker: true
+      allowSticker: true,
+      minReplyMin: 5,
+      maxReplyMin: 60
     },
+    moments: [],
+    momentCfg: {
+      enabled: true,
+      intervalHours: 6,
+      minCards: 2,
+      maxCards: 5,
+      stickerProb: 30,
+      replyProb: 60,
+      reactProb: 60
+    },
+    momentSeenTs: 0,
     musicCfg: {
       enabled: true,
       inviteProb: 8,
@@ -1832,6 +1940,7 @@ body.theme-mono .tab-item.active svg{color:#141414;}
       chars: state.chars,
       contacts: contacts, activeId: state.activeId,
       letters: state.letters.slice(0, 50), letterCfg: state.letterCfg,
+      moments: state.moments.slice(0, 50), momentCfg: state.momentCfg, momentSeenTs: state.momentSeenTs,
       musicCfg: state.musicCfg,
       notifyOn: !!state.notifyOn,
       keepAlive: !!state.keepAlive,
@@ -2007,6 +2116,11 @@ body.theme-mono .tab-item.active svg{color:#141414;}
     if (d.letterCfg && typeof d.letterCfg === 'object') {
       state.letterCfg = Object.assign({}, state.letterCfg, d.letterCfg);
     }
+    if (Array.isArray(d.moments)) state.moments = d.moments;
+    if (d.momentCfg && typeof d.momentCfg === 'object') {
+      state.momentCfg = Object.assign({}, state.momentCfg, d.momentCfg);
+    }
+    if (typeof d.momentSeenTs === 'number') state.momentSeenTs = d.momentSeenTs;
     if (d.musicCfg && typeof d.musicCfg === 'object') {
       state.musicCfg = Object.assign({}, state.musicCfg, d.musicCfg);
     }
@@ -2162,6 +2276,12 @@ body.theme-mono .tab-item.active svg{color:#141414;}
       if (typeof l.emoji !== 'string') l.emoji = '';
       if (typeof l.sticker !== 'string') l.sticker = '';
       if (typeof l.read !== 'boolean') l.read = false;
+      if (l.role !== 'me' && l.role !== 'char') l.role = 'char';
+      if (typeof l.text !== 'string') l.text = '';
+      if (!l.text && l.body.length) l.text = joinCardTexts(l.body);
+      if (typeof l.replied !== 'boolean') l.replied = false;
+      if (typeof l.replyTo !== 'string') l.replyTo = '';
+      if (typeof l.replyDueAt !== 'number' || !isFinite(l.replyDueAt)) l.replyDueAt = 0;
     });
     state.letters = state.letters.slice(0, 50);
 
@@ -2177,10 +2297,64 @@ body.theme-mono .tab-item.active svg{color:#141414;}
       minCards: clampInt(lc.minCards, 1, 20, 3),
       maxCards: clampInt(lc.maxCards, 1, 20, 6),
       allowEmoji: lc.allowEmoji !== false,
-      allowSticker: lc.allowSticker !== false
+      allowSticker: lc.allowSticker !== false,
+      minReplyMin: clampInt(lc.minReplyMin, 1, 720, 5),
+      maxReplyMin: clampInt(lc.maxReplyMin, 1, 720, 60)
     };
     if (state.letterCfg.maxCards < state.letterCfg.minCards) {
       state.letterCfg.maxCards = state.letterCfg.minCards;
+    }
+    if (state.letterCfg.maxReplyMin < state.letterCfg.minReplyMin) {
+      state.letterCfg.maxReplyMin = state.letterCfg.minReplyMin;
+    }
+
+    // 朋友圈数据与设置
+    if (!Array.isArray(state.moments)) state.moments = [];
+    state.moments = state.moments.filter(m => m && typeof m === 'object');
+    state.moments.forEach(m => {
+      if (typeof m.id !== 'string' || !m.id) m.id = uid();
+      if (typeof m.cid !== 'string') m.cid = '';
+      if (typeof m.ts !== 'number' || !isFinite(m.ts)) m.ts = Date.now();
+      if (typeof m.text !== 'string') m.text = '';
+      if (!Array.isArray(m.images)) m.images = [];
+      m.images = m.images.filter(u => typeof u === 'string');
+      if (typeof m.sticker !== 'string') m.sticker = '';
+      if (!Array.isArray(m.likes)) m.likes = [];
+      m.likes = m.likes.filter(id => typeof id === 'string');
+      if (!Array.isArray(m.comments)) m.comments = [];
+      m.comments = m.comments.filter(cm => cm && typeof cm === 'object');
+      m.comments.forEach(cm => {
+        if (typeof cm.id !== 'string' || !cm.id) cm.id = uid();
+        if (typeof cm.cid !== 'string') cm.cid = '';
+        if (typeof cm.text !== 'string') cm.text = '';
+        if (typeof cm.ts !== 'number' || !isFinite(cm.ts)) cm.ts = Date.now();
+        if (typeof cm.replyDueAt !== 'number' || !isFinite(cm.replyDueAt)) cm.replyDueAt = 0;
+        if (typeof cm.replyCid !== 'string') cm.replyCid = '';
+      });
+      if (!Array.isArray(m.pending)) m.pending = [];
+      m.pending = m.pending.filter(p => p && typeof p === 'object');
+      m.pending.forEach(p => {
+        if (typeof p.cid !== 'string') p.cid = '';
+        if (typeof p.dueAt !== 'number' || !isFinite(p.dueAt)) p.dueAt = Date.now();
+        if (p.kind !== 'like' && p.kind !== 'comment') p.kind = 'like';
+        if (typeof p.text !== 'string') p.text = '';
+      });
+    });
+    state.moments = state.moments.slice(0, 50);
+    if (typeof state.momentSeenTs !== 'number' || !isFinite(state.momentSeenTs)) state.momentSeenTs = 0;
+
+    const mcfg = state.momentCfg && typeof state.momentCfg === 'object' ? state.momentCfg : {};
+    state.momentCfg = {
+      enabled: mcfg.enabled !== false,
+      intervalHours: clampInt(mcfg.intervalHours, 1, 720, 6),
+      minCards: clampInt(mcfg.minCards, 1, 20, 2),
+      maxCards: clampInt(mcfg.maxCards, 1, 20, 5),
+      stickerProb: clampInt(mcfg.stickerProb, 0, 100, 30),
+      replyProb: clampInt(mcfg.replyProb, 0, 100, 60),
+      reactProb: clampInt(mcfg.reactProb, 0, 100, 60)
+    };
+    if (state.momentCfg.maxCards < state.momentCfg.minCards) {
+      state.momentCfg.maxCards = state.momentCfg.minCards;
     }
 
     // 一起听歌设置
@@ -2455,11 +2629,13 @@ body.theme-mono .tab-item.active svg{color:#141414;}
   let bannerTimer = null;
   let bannerContactId = '';
   let bannerLetterId = '';
+  let bannerMomentId = '';
   function showMsgBanner(c, msg) {
     const el = $('msgBanner');
     if (!el || !c) return;
     bannerContactId = c.id;
     bannerLetterId = '';
+    bannerMomentId = '';
     paintAvatar($('bannerAvatar'), c.avatar, c.name);
     $('bannerName').textContent = c.name || '梦角';
     $('bannerText').textContent = bannerPreview(msg);
@@ -2484,6 +2660,7 @@ body.theme-mono .tab-item.active svg{color:#141414;}
 
   function routeNotify(data) {
     if (!data) return;
+    if (data.momid) { openMoments(data.momid); return; }
     if (data.lid) { openLetters(data.lid); return; }
     if (data.cid) {
       const c = contactById(data.cid);
@@ -3824,6 +4001,7 @@ body.theme-mono .tab-item.active svg{color:#141414;}
     Object.keys(PAGE_MAP).forEach(k => PAGE_MAP[k].classList.remove('show'));
     $('music').classList.remove('show');
     $('letters').classList.remove('show');
+    $('moments').classList.remove('show');
     if (page === 'lib') {
       openLib();
     } else if (page === 'set') {
@@ -4602,9 +4780,12 @@ body.theme-mono .tab-item.active svg{color:#141414;}
 
   $('msgBanner').addEventListener('click', function () {
     const lid = bannerLetterId;
+    const momid = bannerMomentId;
     const c = contactById(bannerContactId);
     $('msgBanner').classList.remove('show');
     bannerLetterId = '';
+    bannerMomentId = '';
+    if (momid) { openMoments(momid); return; }
     if (lid) { openLetters(lid); return; }
     if (c) openChat(c.id);
   });
@@ -4622,39 +4803,72 @@ body.theme-mono .tab-item.active svg{color:#141414;}
   function updateLetterBadge() {
     const b = $('moreLetterBadge');
     if (!b) return;
-    const n = state.letters.filter(l => !l.read).length;
+    const n = state.letters.filter(l => l.role !== 'me' && !l.read).length;
     b.hidden = n <= 0;
     b.textContent = n > 99 ? '99+' : String(n);
   }
+  const CARD_JOIN_MARKS = ['，', '。', '？', '！', '…', '；'];
+
+  function joinCardTexts(list) {
+    const arr = (list || []).map(function (t) { return String(t).trim(); }).filter(Boolean);
+    if (!arr.length) return '';
+    return arr.map(function (t, i) {
+      let s = t.replace(/\s+/g, ' ').replace(/[，。？！…；、,.!?;]$/, '');
+      if (i === arr.length - 1) return s + '。';
+      return s + CARD_JOIN_MARKS[Math.floor(Math.random() * CARD_JOIN_MARKS.length)];
+    }).join('');
+  }
+
+  function letterDisplayText(l) {
+    if (l.text) return l.text;
+    return joinCardTexts(l.body || []);
+  }
+
   function renderLetters(openId) {
     if (!letterListEl) return;
     if (!state.letters.length) {
-      letterListEl.innerHTML = '<div class="letter-empty">还没有收到信。到了设定时间，TA 会从字卡里挑几张拼一封信给你～</div>';
+      letterListEl.innerHTML = '<div class="letter-empty">还没有信件。到了设定时间，TA 会从字卡里挑几张拼一封信给你；你也可以点右上角的笔给他写信～</div>';
       updateLetterBadge();
       return;
     }
     letterListEl.innerHTML = state.letters.map(function (l) {
+      const isMine = l.role === 'me';
       const c = letterContact(l) || {};
-      const name = c.name || '梦角';
-      const avText = c.avatar ? '' : String(name).slice(0, 1);
-      const excerpt = esc(String(l.body[0] || '').slice(0, 60));
-      return '<div class="letter-card' + (openId === l.id ? ' open' : '') + '" data-lid="' + esc(l.id) + '">' +
+      const name = isMine ? (state.userName || '我') : (c.name || '梦角');
+      const avText = String(name).slice(0, 1);
+      const full = letterDisplayText(l);
+      const excerpt = esc(full.replace(/\n/g, ' ').slice(0, 60));
+      let extra = '';
+      if (isMine) {
+        if (l.replied) extra = '<div class="letter-pending">TA 已回信</div>';
+        else if (l.replyDueAt) {
+          const wait = Math.max(1, Math.ceil((l.replyDueAt - Date.now()) / 60000));
+          extra = '<div class="letter-pending">等待 TA 回信…（约 ' + wait + ' 分钟）</div>';
+        }
+      }
+      return '<div class="letter-card' + (openId === l.id ? ' open' : '') + (isMine ? ' mine' : '') + '" data-lid="' + esc(l.id) + '">' +
         '<div class="letter-head"><div class="avatar">' + esc(avText) + '</div>' +
         '<div style="display:flex;flex-direction:column;gap:2px;min-width:0;"><b>' + esc(name) + '</b><span>' + esc(letterDate(l.ts)) + '</span></div>' +
-        (l.read ? '' : '<span class="letter-dot"></span>') + '</div>' +
+        (!isMine && !l.read ? '<span class="letter-dot"></span>' : '') + '</div>' +
         '<div class="letter-excerpt">' + excerpt + '</div>' +
         '<div class="letter-body">' +
-          '<p>致 ' + esc(state.userName || '我') + '：</p>' +
-          l.body.map(function (t) { return '<p>' + esc(t) + '</p>'; }).join('') +
-          (l.emoji ? '<div class="letter-emoji">' + esc(l.emoji) + '</div>' : '') +
-          (l.sticker ? '<img class="letter-sticker" src="' + l.sticker + '" alt="表情包">' : '') +
+          (isMine ? '' : '<p>致 ' + esc(state.userName || '我') + '：</p>') +
+          '<p>' + esc(full) + '</p>' +
+          (!isMine && l.emoji ? '<div class="letter-emoji">' + esc(l.emoji) + '</div>' : '') +
+          (!isMine && l.sticker ? '<img class="letter-sticker" src="' + esc(l.sticker) + '" alt="表情包">' : '') +
           '<div class="letter-sign">—— ' + esc(name) + '</div>' +
+          extra +
+          (isMine ? '' : '<button class="letter-reply" data-reply="' + esc(l.id) + '">回信</button>') +
         '</div></div>';
     }).join('');
     letterListEl.querySelectorAll('[data-lid]').forEach(function (card) {
       const l = state.letters.find(function (x) { return x.id === card.dataset.lid; });
-      const c = l && letterContact(l);
-      if (c) paintAvatar(card.querySelector('.avatar'), c.avatar, c.name);
+      if (!l) return;
+      if (l.role === 'me') paintAvatar(card.querySelector('.avatar'), state.userAvatar, state.userName || '我');
+      else {
+        const c = letterContact(l);
+        if (c) paintAvatar(card.querySelector('.avatar'), c.avatar, c.name);
+      }
     });
     updateLetterBadge();
   }
@@ -4662,22 +4876,22 @@ body.theme-mono .tab-item.active svg{color:#141414;}
     renderLetters();
   }
 
-  function showLetterBanner(l, c) {
+  function showLetterBanner(l, c, isReply) {
     const el = $('msgBanner');
     if (!el || !c) return;
     bannerContactId = c.id;
     bannerLetterId = l.id;
+    bannerMomentId = '';
     paintAvatar($('bannerAvatar'), c.avatar, c.name);
     $('bannerName').textContent = c.name || '梦角';
-    $('bannerText').textContent = '给你写了一封信';
+    $('bannerText').textContent = isReply ? '回信给你了' : '给你写了一封信';
     el.classList.add('show');
     clearTimeout(bannerTimer);
     bannerTimer = setTimeout(function () { el.classList.remove('show'); }, 4000);
   }
 
-  function writeLetter() {
-    const c = activeContact();
-    if (!c) return null;
+  function composeLetter(c, opts) {
+    opts = opts || {};
     const pool = state.cards.filter(function (x) {
       return x && !x.off && !isGroupOff(x.group) && typeof x.text === 'string' && x.text.trim();
     });
@@ -4686,39 +4900,103 @@ body.theme-mono .tab-item.active svg{color:#141414;}
     const pick = Math.floor(Math.random() * (cfg.maxCards - cfg.minCards + 1)) + cfg.minCards;
     const n = Math.max(1, Math.min(pick, pool.length));
     const shuffled = pool.slice().sort(function () { return Math.random() - 0.5; });
-    const chosen = shuffled.slice(0, n);
-    const letter = {
+    const body = shuffled.slice(0, n).map(function (x) { return x.text.trim(); });
+    return {
       id: uid(),
       cid: c.id,
       ts: Date.now(),
-      body: chosen.map(function (x) { return x.text.trim(); }),
+      body: body,
+      text: joinCardTexts(body),
       emoji: cfg.allowEmoji ? LETTER_EMOJI[Math.floor(Math.random() * LETTER_EMOJI.length)] : '',
       sticker: (cfg.allowSticker && state.stickers.length)
         ? state.stickers[Math.floor(Math.random() * state.stickers.length)].url : '',
-      read: false
+      role: 'char',
+      read: false,
+      replyTo: opts.replyTo || '',
+      replyDueAt: 0,
+      replied: false
     };
+  }
+
+  function deliverLetter(letter, c, isReply) {
+    if (!letter || !c) return null;
     state.letters.unshift(letter);
     if (state.letters.length > 50) state.letters.length = 50;
     if ($('letters').classList.contains('show')) {
       letter.read = true;
       renderLettersIfOpen();
     } else {
-      showLetterBanner(letter, c);
-      showSystemNotify(c.name || '梦角', '给你写了一封信', { type: 'letter', cid: c.id, lid: letter.id, tag: 'letter-' + c.id });
+      showLetterBanner(letter, c, isReply);
+      showSystemNotify(c.name || '梦角', isReply ? '回信给你了' : '给你写了一封信', { type: 'letter', cid: c.id, lid: letter.id, tag: 'letter-' + c.id });
     }
     save();
     updateLetterBadge();
     return letter;
   }
 
+  function writeLetter() {
+    const c = activeContact();
+    if (!c) return null;
+    return deliverLetter(composeLetter(c), c, false);
+  }
+
+  function userLetterDelayMs() {
+    const cfg = state.letterCfg;
+    const lo = Math.max(1, cfg.minReplyMin) * 60000;
+    const hi = Math.max(lo, cfg.maxReplyMin * 60000);
+    return Math.round(lo + Math.random() * (hi - lo));
+  }
+
+  function sendUserLetter(c, text, replyToId) {
+    if (!c) return null;
+    const body = String(text || '').trim();
+    if (!body) return null;
+    const due = Date.now() + userLetterDelayMs();
+    const letter = {
+      id: uid(), cid: c.id, ts: Date.now(), body: [], text: body,
+      emoji: '', sticker: '', role: 'me', read: true,
+      replyTo: replyToId || '', replyDueAt: due, replied: false
+    };
+    state.letters.unshift(letter);
+    if (state.letters.length > 50) state.letters.length = 50;
+    save();
+    renderLettersIfOpen();
+    updateLetterBadge();
+    setTimeout(processLetterReplies, Math.max(0, due - Date.now()) + 300);
+    return letter;
+  }
+
+  function processLetterReplies() {
+    const now = Date.now();
+    const due = state.letters.filter(function (l) {
+      return l.role === 'me' && !l.replied && l.replyDueAt && l.replyDueAt <= now;
+    });
+    if (!due.length) return;
+    let changed = false;
+    due.forEach(function (mine) {
+      const c = contactById(mine.cid) || activeContact();
+      if (!c) return;
+      const letter = composeLetter(c, { replyTo: mine.id });
+      if (!letter) { mine.replyDueAt = now + 60000; return; }
+      mine.replied = true;
+      mine.replyDueAt = 0;
+      deliverLetter(letter, c, true);
+      changed = true;
+    });
+    if (changed) { save(); renderLettersIfOpen(); updateLetterBadge(); }
+  }
+
   function checkLetterDue() {
+    processLetterReplies();
     const cfg = state.letterCfg;
     if (!cfg.enabled || !state.contacts.length) return;
     const poolReady = state.cards.some(function (x) {
       return x && !x.off && !isGroupOff(x.group) && typeof x.text === 'string' && x.text.trim();
     });
     if (!poolReady) return;
-    const latest = state.letters.reduce(function (m, l) { return Math.max(m, l.ts || 0); }, 0);
+    const latest = state.letters.reduce(function (m, l) {
+      return l.role !== 'me' ? Math.max(m, l.ts || 0) : m;
+    }, 0);
     if (latest && Date.now() - latest < cfg.intervalHours * 3600000) return;
     writeLetter();
   }
@@ -4726,10 +5004,11 @@ body.theme-mono .tab-item.active svg{color:#141414;}
   function openLetters(focusId) {
     $('more').classList.add('show');
     $('music').classList.remove('show');
+    $('moments').classList.remove('show');
     currentPage = 'more';
     setTabActive('more');
     let changed = false;
-    state.letters.forEach(function (l) { if (!l.read) { l.read = true; changed = true; } });
+    state.letters.forEach(function (l) { if (l.role !== 'me' && !l.read) { l.read = true; changed = true; } });
     if (changed) save();
     renderLetters(focusId);
     $('letters').classList.add('show');
@@ -4749,22 +5028,29 @@ body.theme-mono .tab-item.active svg{color:#141414;}
       '<label class="field"><span>每隔多少小时写一封</span><input id="lcInterval" type="number" min="1" max="720" value="' + cfg.intervalHours + '"></label>' +
       '<label class="field"><span>最少拼几张字卡</span><input id="lcMin" type="number" min="1" max="20" value="' + cfg.minCards + '"></label>' +
       '<label class="field"><span>最多拼几张字卡</span><input id="lcMax" type="number" min="1" max="20" value="' + cfg.maxCards + '"></label>' +
+      '<label class="field"><span>回信最短时间（分钟）</span><input id="lcReplyMin" type="number" min="1" max="720" value="' + cfg.minReplyMin + '"></label>' +
+      '<label class="field"><span>回信最长时间（分钟）</span><input id="lcReplyMax" type="number" min="1" max="720" value="' + cfg.maxReplyMin + '"></label>' +
       '<div class="field"><span>信里可以包含</span>' +
         '<div style="display:flex;align-items:center;justify-content:space-between;gap:10px;margin:6px 0;"><span style="font-size:13px;">Emoji</span><button class="' + sw(cfg.allowEmoji) + '" id="lcEmoji"></button></div>' +
         '<div style="display:flex;align-items:center;justify-content:space-between;gap:10px;"><span style="font-size:13px;">表情包（最多一张）</span><button class="' + sw(cfg.allowSticker) + '" id="lcSticker"></button></div>' +
       '</div>' +
-      '<p class="hint">到时间 TA 会自动从字卡里挑几张拼成一封信，并在顶部提示你；点提示会直接打开这封信。</p>',
+      '<p class="hint">到时间 TA 会自动从字卡里挑几张拼成一封信；你写的信会在「回信最短~最长时间」内收到回信。</p>',
       '保存', function () {
         const intv = Number(($('lcInterval').value || '').trim());
         const lo = Number(($('lcMin').value || '').trim());
         const hi = Number(($('lcMax').value || '').trim());
+        const rlo = Number(($('lcReplyMin').value || '').trim());
+        const rhi = Number(($('lcReplyMax').value || '').trim());
         cfg.intervalHours = Math.max(1, Math.min(720, Math.round(isFinite(intv) ? intv : 24)));
         cfg.minCards = Math.max(1, Math.min(20, Math.round(isFinite(lo) ? lo : 3)));
         cfg.maxCards = Math.max(cfg.minCards, Math.min(20, Math.round(isFinite(hi) ? hi : 6)));
+        cfg.minReplyMin = Math.max(1, Math.min(720, Math.round(isFinite(rlo) ? rlo : 5)));
+        cfg.maxReplyMin = Math.max(cfg.minReplyMin, Math.min(720, Math.round(isFinite(rhi) ? rhi : 60)));
         cfg.allowEmoji = !$('lcEmoji').classList.contains('off');
         cfg.allowSticker = !$('lcSticker').classList.contains('off');
         save();
         toast('信件设置已保存');
+        processLetterReplies();
         checkLetterDue();
         return true;
       });
@@ -4772,13 +5058,472 @@ body.theme-mono .tab-item.active svg{color:#141414;}
     $('lcSticker').addEventListener('click', function () { this.classList.toggle('off'); });
   }
 
+  function openLetterComposer(replyToId) {
+    const replyTo = replyToId ? state.letters.find(function (l) { return l.id === replyToId; }) : null;
+    const c = (replyTo && contactById(replyTo.cid)) || activeContact();
+    if (!c) { toast('先添加一个梦角吧'); return; }
+    const cfg = state.letterCfg;
+    const isReply = !!replyToId;
+    openModal(isReply ? '回信给 ' + (c.name || '梦角') : '写信给 ' + (c.name || '梦角'),
+      '<label class="field"><span>想说的话</span><textarea id="lcWriteText" placeholder="写点什么…"></textarea></label>' +
+      '<p class="hint">寄出后约 ' + cfg.minReplyMin + '~' + cfg.maxReplyMin + ' 分钟会收到回信，可在信件设置里调整。</p>',
+      '寄出', function () {
+        const text = String(($('lcWriteText') && $('lcWriteText').value) || '').trim();
+        if (!text) { toast('先写点内容吧'); return false; }
+        sendUserLetter(c, text, replyToId || '');
+        toast('已寄出，等 TA 回信吧');
+        return true;
+      });
+  }
+
   $('moreLetterCard').addEventListener('click', function () { openLetters(); });
   $('btnCloseLetters').addEventListener('click', function () { $('letters').classList.remove('show'); });
   $('btnLetterCfg').addEventListener('click', openLetterSettings);
+  $('btnWriteLetter').addEventListener('click', function () { openLetterComposer(''); });
   letterListEl.addEventListener('click', function (e) {
+    const reply = e.target.closest('[data-reply]');
+    if (reply) {
+      e.stopPropagation();
+      openLetterComposer(reply.dataset.reply);
+      return;
+    }
     const card = e.target.closest('[data-lid]');
     if (!card) return;
     card.classList.toggle('open');
+  });
+
+  /* ================= 朋友圈 ================= */
+  const MOMENT_COMMENTS = ['好看！', '今天也很棒呀～', '想和你一起看。', '这张图好有感觉。', '拍得真好。', '看到心情都变好了。', '下次带我一个。', '我在呢。', '嗯，喜欢这条。'];
+  const momentListEl = $('momentList');
+  let momentDraft = { images: [], sticker: '' };
+
+  function momentTargets() {
+    if (state.singleMode) {
+      const c = activeContact();
+      return c ? [c] : [];
+    }
+    return state.contacts.slice();
+  }
+  function momentAuthor(m) {
+    return m && m.cid !== 'me' ? contactById(m.cid) : null;
+  }
+  function momentName(cid) {
+    if (cid === 'me') return state.userName || '我';
+    const c = contactById(cid);
+    return c ? (c.name || '梦角') : '梦角';
+  }
+  function momentDate(ts) {
+    const d = new Date(ts), n = new Date();
+    const same = d.getFullYear() === n.getFullYear() && d.getMonth() === n.getMonth() && d.getDate() === n.getDate();
+    if (same) return '今天 ' + fmtTime(ts);
+    return (d.getMonth() + 1) + '.' + d.getDate() + ' ' + fmtTime(ts);
+  }
+  function momentCommentText() {
+    return MOMENT_COMMENTS[Math.floor(Math.random() * MOMENT_COMMENTS.length)];
+  }
+  function updateMomentBadge() {
+    const b = $('moreMomentBadge');
+    if (!b) return;
+    const seen = state.momentSeenTs || 0;
+    const n = state.moments.filter(function (m) { return m.cid !== 'me' && (m.ts || 0) > seen; }).length;
+    b.hidden = n <= 0;
+    b.textContent = n > 99 ? '99+' : String(n);
+  }
+  function momentLikeNames(list) {
+    return (list || []).map(momentName);
+  }
+  function renderMoments() {
+    if (!momentListEl) return;
+    const prev = momentListEl.scrollTop;
+    if (!state.moments.length) {
+      momentListEl.innerHTML = '<div class="moment-empty">还没有动态。TA 会从字卡里拼一条发出来，你也可以点右上角发自己的动态～</div>';
+      updateMomentBadge();
+      return;
+    }
+    momentListEl.innerHTML = state.moments.map(function (m) {
+      const name = momentName(m.cid);
+      const liked = (m.likes || []).indexOf('me') >= 0;
+      const imgs = (m.images || []).slice(0, 3);
+      const likes = momentLikeNames(m.likes);
+      const comments = (m.comments || []).map(function (cm) {
+        return '<div class="moment-comment"><b>' + esc(momentName(cm.cid)) + '</b>：' + esc(cm.text) + '</div>';
+      }).join('');
+      return '<div class="moment-card" data-mid="' + esc(m.id) + '">' +
+        '<div class="moment-head"><div class="avatar">' + esc(String(name).slice(0, 1)) + '</div>' +
+          '<div class="moment-who"><b>' + esc(name) + '</b><span>' + esc(momentDate(m.ts)) + '</span></div></div>' +
+        (m.text ? '<div class="moment-text">' + esc(m.text) + '</div>' : '') +
+        (imgs.length ? '<div class="moment-imgs' + (imgs.length === 1 ? ' single' : '') + '">' +
+          imgs.map(function (u) { return '<img src="' + esc(u) + '" alt="图片">'; }).join('') + '</div>' : '') +
+        (m.sticker ? '<img class="moment-sticker" src="' + esc(m.sticker) + '" alt="表情包">' : '') +
+        '<div class="moment-actions">' +
+          '<button class="moment-action' + (liked ? ' liked' : '') + '" data-like="' + esc(m.id) + '">' +
+            '<svg viewBox="0 0 24 24" fill="' + (liked ? 'currentColor' : 'none') + '" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.7l-1-1.1a5.5 5.5 0 0 0-7.8 7.8l1.1 1L12 21l7.7-7.6 1.1-1a5.5 5.5 0 0 0 0-7.8Z"/></svg>' +
+            '<span>' + (liked ? '已赞' : (likes.length ? String(likes.length) : '赞')) + '</span></button>' +
+          '<button class="moment-action" data-focus-comment="' + esc(m.id) + '">' +
+            '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.4 8.4 0 0 1-9 8.4 8.6 8.6 0 0 1-3.6-.8L3 21l1.9-5.4a8.4 8.4 0 1 1 16.1-4.1Z"/></svg><span>评论</span></button>' +
+        '</div>' +
+        (likes.length ? '<div class="moment-likes">❤ ' + esc(likes.join('、')) + '</div>' : '') +
+        (comments ? '<div class="moment-comments">' + comments + '</div>' : '') +
+        '<div class="moment-cinput"><input data-cinput placeholder="评论…"><button data-csend>发送</button></div>' +
+      '</div>';
+    }).join('');
+    momentListEl.querySelectorAll('[data-mid]').forEach(function (card) {
+      const m = state.moments.find(function (x) { return x.id === card.dataset.mid; });
+      if (!m) return;
+      const av = card.querySelector('.moment-head .avatar');
+      if (m.cid === 'me') paintAvatar(av, state.userAvatar, state.userName || '我');
+      else {
+        const c = contactById(m.cid);
+        if (c) paintAvatar(av, c.avatar, c.name);
+      }
+    });
+    momentListEl.scrollTop = prev;
+    updateMomentBadge();
+  }
+
+  function composeMoment(c) {
+    const cfg = state.momentCfg;
+    const pool = state.cards.filter(function (x) {
+      return x && !x.off && !isGroupOff(x.group) && typeof x.text === 'string' && x.text.trim();
+    });
+    if (!pool.length) return null;
+    const pick = Math.floor(Math.random() * (cfg.maxCards - cfg.minCards + 1)) + cfg.minCards;
+    const n = Math.max(1, Math.min(pick, pool.length));
+    const shuffled = pool.slice().sort(function () { return Math.random() - 0.5; });
+    const text = joinCardTexts(shuffled.slice(0, n).map(function (x) { return x.text.trim(); }));
+    const sticker = (state.stickers.length && Math.random() * 100 < cfg.stickerProb)
+      ? state.stickers[Math.floor(Math.random() * state.stickers.length)].url : '';
+    return {
+      id: uid(), cid: c.id, ts: Date.now(), text: text,
+      images: [], sticker: sticker, likes: [], comments: [], pending: []
+    };
+  }
+
+  function scheduleNextMoment(c) {
+    const base = Math.max(60000, state.momentCfg.intervalHours * 3600000);
+    c.momentNextAt = Date.now() + Math.round(base * (0.8 + Math.random() * 0.4));
+  }
+
+  function initMomentSchedule() {
+    const cfg = state.momentCfg;
+    const iv = Math.max(60000, cfg.intervalHours * 3600000);
+    const now = Date.now();
+    state.contacts.forEach(function (c) {
+      if (typeof c.momentNextAt === 'number' && isFinite(c.momentNextAt)) return;
+      const last = state.moments.reduce(function (mx, m) {
+        return (m.cid === c.id && (m.ts || 0) > mx) ? m.ts : mx;
+      }, 0);
+      c.momentNextAt = last
+        ? Math.round(last + iv + Math.random() * iv * 0.3)
+        : Math.round(now + 30000 + Math.random() * iv);
+      if (c.momentNextAt < now + 30000) c.momentNextAt = now + 30000;
+    });
+  }
+
+  function showMomentBanner(c, text, mid) {
+    const el = $('msgBanner');
+    if (!el || !c) return;
+    bannerContactId = c.id;
+    bannerLetterId = '';
+    bannerMomentId = mid || '';
+    paintAvatar($('bannerAvatar'), c.avatar, c.name);
+    $('bannerName').textContent = c.name || '梦角';
+    $('bannerText').textContent = text || '发了新动态';
+    el.classList.add('show');
+    clearTimeout(bannerTimer);
+    bannerTimer = setTimeout(function () { el.classList.remove('show'); }, 4000);
+  }
+
+  function writeMoment(c, quiet) {
+    if (!c) return null;
+    const m = composeMoment(c);
+    if (!m) return null;
+    state.moments.unshift(m);
+    if (state.moments.length > 50) state.moments.length = 50;
+    if ($('moments').classList.contains('show')) {
+      state.momentSeenTs = Date.now();
+      renderMoments();
+    } else if (!quiet) {
+      showMomentBanner(c, '发了新动态', m.id);
+      showSystemNotify(c.name || '梦角', '发了新动态', { type: 'moment', cid: c.id, momid: m.id, tag: 'moment-' + c.id });
+    }
+    scheduleNextMoment(c);
+    save();
+    updateMomentBadge();
+    return m;
+  }
+
+  function checkMomentDue() {
+    const cfg = state.momentCfg;
+    if (!cfg.enabled) return;
+    const poolReady = state.cards.some(function (x) {
+      return x && !x.off && !isGroupOff(x.group) && typeof x.text === 'string' && x.text.trim();
+    });
+    if (!poolReady) return;
+    initMomentSchedule();
+    const now = Date.now();
+    momentTargets().forEach(function (c) {
+      if (!c || typeof c.momentNextAt !== 'number') return;
+      if (now >= c.momentNextAt) writeMoment(c, false);
+    });
+  }
+
+  function processMomentPending() {
+    const now = Date.now();
+    let changed = false;
+    const notices = [];
+    state.moments.forEach(function (m) {
+      if (!m.pending || !m.pending.length) return;
+      const due = m.pending.filter(function (p) { return p && p.dueAt <= now; });
+      if (!due.length) return;
+      due.forEach(function (p) {
+        const c = contactById(p.cid);
+        if (!c) return;
+        if (p.kind === 'like') {
+          m.likes = m.likes || [];
+          if (m.likes.indexOf(p.cid) < 0) m.likes.push(p.cid);
+          notices.push({ cid: p.cid, text: '赞了你的动态', mid: m.id });
+        } else {
+          m.comments = m.comments || [];
+          m.comments.push({ id: uid(), cid: p.cid, text: p.text || momentCommentText(), ts: now, replyDueAt: 0, replyCid: '' });
+          notices.push({ cid: p.cid, text: '评论了你的动态', mid: m.id });
+        }
+      });
+      m.pending = m.pending.filter(function (p) { return p && p.dueAt > now; });
+      changed = true;
+    });
+    if (!changed) return;
+    save();
+    if ($('moments').classList.contains('show')) renderMoments();
+    const n = notices[notices.length - 1];
+    if (n && !$('moments').classList.contains('show')) {
+      const c = contactById(n.cid);
+      if (c) {
+        showMomentBanner(c, n.text, n.mid);
+        showSystemNotify(c.name || '梦角', n.text, { type: 'moment', cid: c.id, momid: n.mid, tag: 'moment-' + c.id });
+      }
+    }
+  }
+
+  function openMoments(focusId) {
+    $('more').classList.add('show');
+    $('music').classList.remove('show');
+    $('letters').classList.remove('show');
+    currentPage = 'more';
+    setTabActive('more');
+    state.momentSeenTs = Date.now();
+    save();
+    renderMoments();
+    $('moments').classList.add('show');
+    updateMomentBadge();
+    momentListEl.scrollTop = 0;
+    if (focusId) {
+      setTimeout(function () {
+        const cards = momentListEl.querySelectorAll('[data-mid]');
+        for (let i = 0; i < cards.length; i++) {
+          if (cards[i].dataset.mid === focusId) { cards[i].scrollIntoView({ block: 'center' }); break; }
+        }
+      }, 80);
+    }
+  }
+
+  function toggleMomentLike(mid) {
+    const m = state.moments.find(function (x) { return x.id === mid; });
+    if (!m) return;
+    m.likes = m.likes || [];
+    const i = m.likes.indexOf('me');
+    if (i >= 0) m.likes.splice(i, 1);
+    else m.likes.push('me');
+    save();
+    renderMoments();
+  }
+
+  function addMyComment(mid, text) {
+    const t = String(text || '').trim();
+    if (!t) return;
+    const m = state.moments.find(function (x) { return x.id === mid; });
+    if (!m) return;
+    m.comments = m.comments || [];
+    m.comments.push({ id: uid(), cid: 'me', text: t.slice(0, 200), ts: Date.now(), replyDueAt: 0, replyCid: '' });
+    const cfg = state.momentCfg;
+    const author = momentAuthor(m);
+    const responders = author ? [author] : momentTargets();
+    if (responders.length && Math.random() * 100 < cfg.replyProb) {
+      const c = responders[Math.floor(Math.random() * responders.length)];
+      m.pending = m.pending || [];
+      m.pending.push({ cid: c.id, dueAt: Date.now() + 60000 + Math.random() * 29 * 60000, kind: 'comment', text: momentCommentText() });
+    }
+    save();
+    renderMoments();
+  }
+
+  function postMyMoment(text, images, sticker) {
+    const t = String(text || '').trim();
+    const imgs = (images || []).slice(0, 3);
+    if (!t && !imgs.length && !sticker) return false;
+    const m = {
+      id: uid(), cid: 'me', ts: Date.now(), text: t.slice(0, 500),
+      images: imgs, sticker: sticker || '', likes: [], comments: [], pending: []
+    };
+    const cfg = state.momentCfg;
+    const now = Date.now();
+    momentTargets().forEach(function (c) {
+      if (Math.random() * 100 < cfg.reactProb) {
+        m.pending.push({ cid: c.id, dueAt: now + 60000 + Math.random() * 7 * 60000, kind: 'like', text: '' });
+      }
+      if (Math.random() * 100 < cfg.reactProb) {
+        m.pending.push({ cid: c.id, dueAt: now + 120000 + Math.random() * 18 * 60000, kind: 'comment', text: momentCommentText() });
+      }
+    });
+    state.moments.unshift(m);
+    if (state.moments.length > 50) state.moments.length = 50;
+    save();
+    renderMoments();
+    toast('动态已发布');
+    setTimeout(processMomentPending, 1000);
+    return true;
+  }
+
+  function openMomentSettings() {
+    const cfg = state.momentCfg;
+    const sw = function (on) { return 'sw' + (on ? '' : ' off'); };
+    openModal('朋友圈设置',
+      '<label class="field"><span>TA 每隔多少小时发一条动态</span><input id="mcInterval" type="number" min="1" max="720" value="' + cfg.intervalHours + '"></label>' +
+      '<label class="field"><span>最少拼几张字卡</span><input id="mcMin" type="number" min="1" max="20" value="' + cfg.minCards + '"></label>' +
+      '<label class="field"><span>最多拼几张字卡</span><input id="mcMax" type="number" min="1" max="20" value="' + cfg.maxCards + '"></label>' +
+      '<label class="field"><span>附带表情包的概率（%）</span><input id="mcStickerProb" type="number" min="0" max="100" value="' + cfg.stickerProb + '"></label>' +
+      '<label class="field"><span>TA 点赞/评论你动态的概率（%）</span><input id="mcReactProb" type="number" min="0" max="100" value="' + cfg.reactProb + '"></label>' +
+      '<label class="field"><span>TA 回复你评论的概率（%）</span><input id="mcReplyProb" type="number" min="0" max="100" value="' + cfg.replyProb + '"></label>' +
+      '<div class="field"><span>自动发动态</span><div style="display:flex;align-items:center;justify-content:space-between;gap:10px;margin:6px 0;"><span style="font-size:13px;">到时间 TA 会发一条动态</span><button class="' + sw(cfg.enabled) + '" id="mcEnabled"></button></div></div>' +
+      '<p class="hint">' + (state.singleMode ? '当前是单人模式，只有当前梦角会发动态、回应你。' : '当前不是单人模式，所有梦角都可能发动态、点赞或评论。') + '</p>',
+      '保存', function () {
+        const clamp = function (v, lo, hi, def) {
+          const n = Number(v);
+          if (!isFinite(n)) return def;
+          return Math.max(lo, Math.min(hi, Math.round(n)));
+        };
+        cfg.intervalHours = clamp(($('mcInterval').value || '').trim(), 1, 720, 6);
+        cfg.minCards = clamp(($('mcMin').value || '').trim(), 1, 20, 2);
+        cfg.maxCards = Math.max(cfg.minCards, clamp(($('mcMax').value || '').trim(), 1, 20, 5));
+        cfg.stickerProb = clamp(($('mcStickerProb').value || '').trim(), 0, 100, 30);
+        cfg.reactProb = clamp(($('mcReactProb').value || '').trim(), 0, 100, 60);
+        cfg.replyProb = clamp(($('mcReplyProb').value || '').trim(), 0, 100, 60);
+        cfg.enabled = !$('mcEnabled').classList.contains('off');
+        state.contacts.forEach(function (c) { c.momentNextAt = 0; });
+        initMomentSchedule();
+        save();
+        toast('朋友圈设置已保存');
+        checkMomentDue();
+        return true;
+      });
+    $('mcEnabled').addEventListener('click', function () { this.classList.toggle('off'); });
+  }
+
+  function renderMomentDraft() {
+    const preview = $('mcPreview');
+    if (preview) {
+      preview.innerHTML = momentDraft.images.map(function (u, i) {
+        return '<img src="' + esc(u) + '" data-mdimg="' + i + '" alt="图片">';
+      }).join('');
+      preview.style.display = momentDraft.images.length ? 'grid' : 'none';
+    }
+    const grid = $('mcStickerGrid');
+    if (grid) {
+      grid.innerHTML = state.stickers.length
+        ? state.stickers.map(function (s, i) {
+            return '<img src="' + esc(s.url) + '" data-mdsticker="' + i + '" class="' + (momentDraft.sticker === s.url ? 'sel' : '') + '" alt="表情包">';
+          }).join('')
+        : '<p class="hint" style="grid-column:1/-1;">还没有表情包，可以到表情包库里先添加。</p>';
+    }
+  }
+
+  function openMomentComposer() {
+    momentDraft = { images: [], sticker: '' };
+    openModal('发动态',
+      '<label class="field"><span>这一刻的想法</span><textarea id="mcNewText" placeholder="说点什么…"></textarea></label>' +
+      '<div class="field"><span>图片（最多 3 张）</span>' +
+        '<div class="moment-imgs" id="mcPreview" style="display:none;"></div>' +
+        '<div class="lib-actions" style="margin:4px 0 0;"><button class="chip" id="mcPickImg">导入图片</button><button class="chip" id="mcPickSticker">选表情包</button></div>' +
+        '<div class="moment-sticker-picker" id="mcStickerGrid"></div>' +
+      '</div>' +
+      '<p class="hint">发布的动态会让 TA 看到；' + (state.singleMode ? '单人模式只有当前梦角会回应。' : '所有梦角都可能点赞或评论。') + '</p>',
+      '发布', function () {
+        const text = String(($('mcNewText') && $('mcNewText').value) || '').trim();
+        if (!postMyMoment(text, momentDraft.images, momentDraft.sticker)) {
+          toast('写点内容或加一张图吧');
+          return false;
+        }
+        return true;
+      });
+    renderMomentDraft();
+    $('mcPickImg').addEventListener('click', function () { $('momentImgInput').click(); });
+    $('mcPickSticker').addEventListener('click', function () {
+      const g = $('mcStickerGrid');
+      if (g) g.classList.toggle('show');
+    });
+    const grid = $('mcStickerGrid');
+    if (grid) grid.addEventListener('click', function (e) {
+      const img = e.target.closest('[data-mdsticker]');
+      if (!img) return;
+      const s = state.stickers[Number(img.dataset.mdsticker)];
+      if (!s) return;
+      momentDraft.sticker = (momentDraft.sticker === s.url) ? '' : s.url;
+      renderMomentDraft();
+    });
+    const preview = $('mcPreview');
+    if (preview) preview.addEventListener('click', function (e) {
+      const img = e.target.closest('[data-mdimg]');
+      if (!img) return;
+      momentDraft.images.splice(Number(img.dataset.mdimg), 1);
+      renderMomentDraft();
+    });
+  }
+
+  $('momentImgInput').addEventListener('change', function () {
+    const input = this;
+    const files = Array.from(input.files || []).slice(0, Math.max(0, 3 - momentDraft.images.length));
+    input.value = '';
+    if (!files.length) { toast('最多 3 张图片'); return; }
+    let pending = files.length;
+    files.forEach(function (f) {
+      compressImage(f, 900, function (url) {
+        if (url) momentDraft.images.push(url);
+        if (--pending === 0) renderMomentDraft();
+      });
+    });
+  });
+
+  $('moreMomentsCard').addEventListener('click', function () { openMoments(); });
+  $('btnCloseMoments').addEventListener('click', function () { $('moments').classList.remove('show'); });
+  $('btnMomentPost').addEventListener('click', openMomentComposer);
+  $('btnMomentCfg').addEventListener('click', openMomentSettings);
+  momentListEl.addEventListener('click', function (e) {
+    const like = e.target.closest('[data-like]');
+    if (like) { toggleMomentLike(like.dataset.like); return; }
+    const img = e.target.closest('.moment-imgs img, .moment-sticker');
+    if (img) { openImageView(img.src); return; }
+    const send = e.target.closest('[data-csend]');
+    if (send) {
+      const card = send.closest('[data-mid]');
+      const input = card && card.querySelector('[data-cinput]');
+      if (card && input) addMyComment(card.dataset.mid, input.value);
+      return;
+    }
+    const focus = e.target.closest('[data-focus-comment]');
+    if (focus) {
+      const card = focus.closest('[data-mid]');
+      const input = card && card.querySelector('[data-cinput]');
+      if (input) input.focus();
+      return;
+    }
+  });
+  momentListEl.addEventListener('keydown', function (e) {
+    if (e.key !== 'Enter') return;
+    const input = e.target.closest('[data-cinput]');
+    if (!input) return;
+    e.preventDefault();
+    const card = input.closest('[data-mid]');
+    if (card) addMyComment(card.dataset.mid, input.value);
   });
 
   /* 主题切换 */
@@ -5421,13 +6166,25 @@ body.theme-mono .tab-item.active svg{color:#141414;}
     settleToBottom();
     renderContactList();
     updateLetterBadge();
+    updateMomentBadge();
 
     resizeInput();
     updateSendState();
 
-    // 信件：到点检查一次，之后每分钟检查
+    // 信件：到点检查一次，之后每半分钟检查（同时处理到期的回信）
     setTimeout(checkLetterDue, 900);
-    letterTimer = setInterval(checkLetterDue, 60000);
+    letterTimer = setInterval(checkLetterDue, 30000);
+    // 朋友圈：自动发动态 + 处理待办互动（跨刷新保留在数据里）
+    initMomentSchedule();
+    setTimeout(function () {
+      if (!state.moments.length) {
+        const c = activeContact();
+        if (c) writeMoment(c, true);
+      }
+    }, 1200);
+    setTimeout(checkMomentDue, 1500);
+    setInterval(checkMomentDue, 60000);
+    setInterval(processMomentPending, 15000);
     updateNotifyBtn();
     updateKeepAliveBtn();
 
@@ -5476,6 +6233,8 @@ body.theme-mono .tab-item.active svg{color:#141414;}
     updateNotifyBtn();
     updateKeepAliveBtn();
     checkLetterDue();
+    checkMomentDue();
+    processMomentPending();
     state.contacts.forEach(function (c) {
       if (!c || c.busy || !c.replyDueAt) return;
       if (Date.now() >= c.replyDueAt) {
