@@ -5054,7 +5054,7 @@ body.theme-mono .tab-item.active svg{color:#141414;}
         '<div style="display:flex;align-items:center;justify-content:space-between;gap:10px;margin:6px 0;"><span style="font-size:13px;">Emoji</span><button class="' + sw(cfg.allowEmoji) + '" id="lcEmoji"></button></div>' +
         '<div style="display:flex;align-items:center;justify-content:space-between;gap:10px;"><span style="font-size:13px;">表情包（最多一张）</span><button class="' + sw(cfg.allowSticker) + '" id="lcSticker"></button></div>' +
       '</div>' +
-      '<p class="hint">到时间 TA 会自动从字卡里挑几张拼成一封信；你写的信会在「回信最短~最长时间」内收到回信。</p>',
+      '<p class="hint">到时间 TA 会自动从字卡里挑几张拼成一封信；你写的信会在「回信最短~最长时间」内收到回信，回信可能是字卡拼成的，也可能是一句简短的话。</p>',
       '保存', function () {
         const intv = Number(($('lcInterval').value || '').trim());
         const lo = Number(($('lcMin').value || '').trim());
@@ -5460,7 +5460,7 @@ body.theme-mono .tab-item.active svg{color:#141414;}
       '<label class="field"><span>TA 点赞/评论你动态的概率（%）</span><input id="mcReactProb" type="number" min="0" max="100" value="' + cfg.reactProb + '"></label>' +
       '<label class="field"><span>TA 回复你评论的概率（%）</span><input id="mcReplyProb" type="number" min="0" max="100" value="' + cfg.replyProb + '"></label>' +
       '<div class="field"><span>自动发动态</span><div style="display:flex;align-items:center;justify-content:space-between;gap:10px;margin:6px 0;"><span style="font-size:13px;">到时间 TA 会发一条动态</span><button class="' + sw(cfg.enabled) + '" id="mcEnabled"></button></div></div>' +
-      '<p class="hint">' + (state.singleMode ? '当前是单人模式，只有当前梦角会发动态、回应你。' : '当前不是单人模式，所有梦角都可能发动态、点赞或评论。') + '</p>',
+      '<p class="hint">' + (state.singleMode ? '当前是单人模式，只有当前梦角会发动态、回应你。' : '当前不是单人模式，所有梦角都可能发动态、点赞或评论。') + ' TA 回复你的评论一般在 15 秒~1.5 分钟内，可能用字卡拼句，也可能直接说一句，偶尔会带表情包。</p>',
       '保存', function () {
         const clamp = function (v, lo, hi, def) {
           const n = Number(v);
