@@ -5121,11 +5121,15 @@ body.theme-mono .tab-item.active svg{color:#141414;}
   function momentCommentText() {
     return MOMENT_COMMENTS[Math.floor(Math.random() * MOMENT_COMMENTS.length)];
   }
+  function momentVisible(m) {
+    if (!state.singleMode) return true;
+    return m.cid === 'me' || m.cid === state.activeId;
+  }
   function updateMomentBadge() {
     const b = $('moreMomentBadge');
     if (!b) return;
     const seen = state.momentSeenTs || 0;
-    const n = state.moments.filter(function (m) { return m.cid !== 'me' && (m.ts || 0) > seen; }).length;
+    const n = state.moments.filter(function (m) { return m.cid !== 'me' && (m.ts || 0) > seen && momentVisible(m); }).length;
     b.hidden = n <= 0;
     b.textContent = n > 99 ? '99+' : String(n);
   }
@@ -5135,12 +5139,13 @@ body.theme-mono .tab-item.active svg{color:#141414;}
   function renderMoments() {
     if (!momentListEl) return;
     const prev = momentListEl.scrollTop;
-    if (!state.moments.length) {
+    const list = state.moments.filter(momentVisible);
+    if (!list.length) {
       momentListEl.innerHTML = '<div class="moment-empty">还没有动态。TA 会从字卡里拼一条发出来，你也可以点右上角发自己的动态～</div>';
       updateMomentBadge();
       return;
     }
-    momentListEl.innerHTML = state.moments.map(function (m) {
+    momentListEl.innerHTML = list.map(function (m) {
       const name = momentName(m.cid);
       const liked = (m.likes || []).indexOf('me') >= 0;
       const imgs = (m.images || []).slice(0, 3);
