@@ -896,8 +896,8 @@ body.theme-mono .moment-action.liked{color:#141414;}
 }
 .drawer.show{transform:translate(-50%,0);visibility:visible;}
 .drawer-head{display:flex;align-items:center;gap:10px;flex:none;margin-bottom:12px;}
-.drawer-head h2{margin:0;margin-right:auto;font-size:17px;font-weight:600;letter-spacing:.3px;}
-.drawer-head .icon-btn{margin-left:0;}
+.drawer-head h2{margin:0;font-size:17px;font-weight:600;letter-spacing:.3px;}
+.drawer-head .icon-btn{margin-left:auto;}
 
 /* ===================== 底部导航 ===================== */
 .tabbar{
@@ -1747,9 +1747,6 @@ body.theme-mono .tab-item.active svg{color:#141414;}
     <button class="icon-btn" id="btnNovelImport" aria-label="导入 TXT">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 16V4"/><path d="m7.5 8.5 4.5-4.5 4.5 4.5"/><path d="M4 16v3a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-3"/></svg>
     </button>
-    <button class="icon-btn" id="btnNovelLink" aria-label="导入链接">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.07 0l1.42-1.42a5 5 0 0 0-7.07-7.07L10.6 5.33"/><path d="M14 11a5 5 0 0 0-7.07 0l-1.42 1.42a5 5 0 0 0 7.07 7.07l.82-.82"/></svg>
-    </button>
     <button class="icon-btn" id="btnNovelPaste" aria-label="粘贴文本">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="7" y="4" width="10" height="4" rx="1.5"/><path d="M9 4H6a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2h-3"/></svg>
     </button>
@@ -1761,10 +1758,9 @@ body.theme-mono .tab-item.active svg{color:#141414;}
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5.5A2.5 2.5 0 0 1 6.5 3H20v16H6.5A2.5 2.5 0 0 0 4 21.5Z"/><path d="M4 5.5v16"/><path d="M8 7h8M8 11h8"/></svg>
       </div>
       <b>还没有小说</b>
-      <p>导入 TXT、粘贴文字或粘贴章节链接，TA 会陪在你旁边，一边看一边和你说说话。</p>
+      <p>导入 TXT 或粘贴一段小说，TA 会陪在你旁边，一边看一边和你说说话。</p>
       <div class="lib-actions">
         <button class="chip" id="btnNovelImport2">导入 TXT</button>
-        <button class="chip" id="btnNovelLink2">导入链接</button>
         <button class="chip" id="btnNovelPaste2">粘贴文本</button>
       </div>
     </div>
@@ -5709,219 +5705,6 @@ body.theme-mono .tab-item.active svg{color:#141414;}
     catch (e) { fr.readAsText(file, 'UTF-8'); }
   }
 
-  /* ---------- 从章节链接抓正文 ---------- */
-  const NOVEL_FETCH_TIMEOUT = 10000;
-  const NOVEL_MAX_PAGES = 5;
-  const NOVEL_JUNK_RE = /^(上一章|下一章|上页|下页|上一页|下一页|目录|章节目录|返回目录|加入书架|书架|投推荐票|推荐票|月票|打赏|收藏|登录|注册|首页|下载|手机阅读|电脑阅读|举报|本章未完|点击下一页|继续阅读|温馨提示|广告|最新网址|最新章节|更多精彩|本章结束|章节错误|报错|分享|评论|点赞|返回顶部|返回书页|查看全部|展开全部|收起)/;
-
-  function fetchTextWithTimeout(url) {
-    const ctrl = new AbortController();
-    const timer = setTimeout(function () { try { ctrl.abort(); } catch (e) {} }, NOVEL_FETCH_TIMEOUT);
-    return fetch(url, { mode: 'cors', credentials: 'omit', cache: 'no-store', signal: ctrl.signal })
-      .then(function (res) {
-        if (!res.ok) throw new Error('HTTP ' + res.status);
-        return res.text();
-      })
-      .finally(function () { clearTimeout(timer); });
-  }
-
-  function cleanNovelLines(raw, title) {
-    const out = [];
-    let last = '';
-    String(raw || '').replace(/\r\n?/g, '\n').split('\n').forEach(function (line) {
-      const s = line.replace(/\u00a0/g, ' ').replace(/[\t ]+/g, ' ').trim();
-      if (!s) return;
-      if (/^(https?:\/\/|www\.)/i.test(s) || /https?:\/\/|\.html(\b|$)/i.test(s)) return;
-      if (/^([\-—=*·•~>|]|【|】){0,3}\s*$/.test(s)) return;
-      if (s.length <= 12 && NOVEL_JUNK_RE.test(s)) return;
-      if (s.length <= 20 && /(金币|VIP|vip|APP|app下载|手机版|wap|www|本站|笔趣阁|广告|免费阅读|首发)/.test(s)) return;
-      if (title && s === title) return;
-      if (s === last) return;
-      out.push(s);
-      last = s;
-    });
-    return out.join('\n\n').trim();
-  }
-
-  function pickNovelTitle(doc, pageUrl) {
-    let t = '';
-    const hs = doc.querySelectorAll('h1,h2');
-    for (let i = 0; i < hs.length; i++) {
-      const s = (hs[i].textContent || '').replace(/\s+/g, ' ').trim();
-      if (s && s.length >= 2 && s.length <= 60 && !/^(最新章节|小说|目录|章节目录)$/.test(s)) { t = s; break; }
-    }
-    if (!t && doc.title) t = String(doc.title).replace(/\s+/g, ' ').trim().split(/[_|｜]/)[0].trim();
-    if (t) t = t.replace(/\s*[-—]\s*(起点中文网|.*小说网|.*文学网|.*阅读网)$/i, '').trim();
-    if (!t) {
-      try { t = new URL(pageUrl).pathname.split('/').pop().replace(/\.\w+$/, '') || '未命名小说'; }
-      catch (e) { t = '未命名小说'; }
-    }
-    return t.slice(0, 80);
-  }
-
-  function extractNovelFromHtml(html, pageUrl, titleOnly) {
-    let doc;
-    try { doc = new DOMParser().parseFromString(html, 'text/html'); } catch (e) { return null; }
-    if (!doc || !doc.body) return null;
-    const title = pickNovelTitle(doc, pageUrl);
-    if (titleOnly) return { title: title, doc: doc };
-    doc.querySelectorAll('script,style,noscript,iframe,nav,footer,header,aside,form,button,select,input,textarea,svg').forEach(function (el) {
-      try { el.remove(); } catch (e) {}
-    });
-    let best = null, bestScore = 0;
-    const cands = doc.body.querySelectorAll('article,main,div,section,td,pre');
-    for (let i = 0; i < cands.length; i++) {
-      const el = cands[i];
-      const raw = (el.textContent || '').replace(/\s+/g, ' ');
-      if (raw.length < 120) continue;
-      const meta = (el.id + ' ' + (typeof el.className === 'string' ? el.className : '')).toLowerCase();
-      let linkLen = 0;
-      el.querySelectorAll('a').forEach(function (a) { linkLen += (a.textContent || '').length; });
-      const linkRatio = raw.length ? linkLen / raw.length : 0;
-      if (linkRatio > 0.4) continue;
-      const bonus = /(content|article|chapter|read|novel|book|text|txt|main|body|detail|story)/.test(meta) ? raw.length * 0.6 : 0;
-      const score = raw.length + bonus - linkRatio * raw.length * 1.5;
-      if (score > bestScore) { bestScore = score; best = el; }
-    }
-    if (!best) best = doc.body;
-    const clone = best.cloneNode(true);
-    clone.querySelectorAll('br').forEach(function (b) { b.replaceWith('\n'); });
-    clone.querySelectorAll('p,div,section,li,td,h1,h2,h3,h4,h5,blockquote').forEach(function (el) {
-      el.appendChild(document.createTextNode('\n'));
-    });
-    return { title: title, text: cleanNovelLines(clone.textContent || '', title) };
-  }
-
-  function extractNovelFromText(raw, pageUrl) {
-    let title = '';
-    const tm = String(raw || '').match(/^(?:Title|标题):\s*(.+)$/m);
-    if (tm) title = tm[1].trim();
-    let body = String(raw || '');
-    const idx = body.indexOf('Markdown Content:');
-    if (idx >= 0) body = body.slice(idx + 'Markdown Content:'.length);
-    body = body
-      .replace(/!\[[^\]]*\]\([^)]*\)/g, '')
-      .replace(/\[([^\]]*)\]\([^)]*\)/g, '$1')
-      .replace(/```[\s\S]*?```/g, '')
-      .replace(/[*_`]{2,}/g, '')
-      .replace(/^(#{1,6}\s+|>\s*|\*\s+|-\s+|\d+\.\s+)/gm, '');
-    if (!title) {
-      try { title = new URL(pageUrl).hostname; } catch (e) { title = '未命名小说'; }
-    }
-    return { title: title, text: cleanNovelLines(body, title) };
-  }
-
-  function findNextNovelPage(doc, pageUrl) {
-    const links = doc.querySelectorAll('a[href]');
-    for (let i = 0; i < links.length; i++) {
-      const a = links[i];
-      const t = (a.textContent || '').replace(/\s+/g, '');
-      if (!/^(下一页|下一頁|下页|下頁)$/.test(t)) continue;
-      const href0 = a.getAttribute('href') || '';
-      if (!href0 || /^javascript:/i.test(href0) || href0.charAt(0) === '#') continue;
-      let href;
-      try { href = new URL(href0, pageUrl).href; } catch (e) { continue; }
-      if (href !== pageUrl) return href;
-    }
-    return null;
-  }
-
-  function looksLikeHtml(raw) {
-    const head = String(raw || '').slice(0, 1200).toLowerCase();
-    return /<!doctype|<html|<body|<div|<p[ >]|<\w+ class=/.test(head);
-  }
-
-  function lookedLikeBlockPage(raw) {
-    return /(Enable JavaScript|Just a moment|Attention Required|人机验证|访问验证|cf-browser-verification|请开启JavaScript)/i.test(String(raw || '').slice(0, 3000));
-  }
-
-  async function fetchNovelByUrl(input) {
-    let url = String(input || '').trim();
-    if (!url) throw new Error('链接为空');
-    if (!/^[a-z][a-z0-9+.-]*:\/\//i.test(url)) url = 'https://' + url;
-    let u;
-    try { u = new URL(url); } catch (e) { throw new Error('链接格式不对'); }
-    if (u.protocol !== 'http:' && u.protocol !== 'https:') throw new Error('只支持 http 链接');
-    const proxies = [
-      { name: 'direct', wrap: function (x) { return x; }, html: true },
-      { name: 'allorigins', wrap: function (x) { return 'https://api.allorigins.win/raw?url=' + encodeURIComponent(x); }, html: true },
-      { name: 'codetabs', wrap: function (x) { return 'https://api.codetabs.com/v1/proxy?quest=' + encodeURIComponent(x); }, html: true },
-      { name: 'jina', wrap: function (x) { return 'https://r.jina.ai/' + x; }, html: false }
-    ];
-    let lastErr = null;
-    for (let i = 0; i < proxies.length; i++) {
-      const p = proxies[i];
-      try {
-        const raw = await fetchTextWithTimeout(p.wrap(url));
-        if (!raw || raw.length < 200 || lookedLikeBlockPage(raw)) throw new Error('empty');
-        let first, rawHtml = '';
-        if (p.html && looksLikeHtml(raw)) {
-          rawHtml = raw;
-          first = extractNovelFromHtml(raw, url);
-        } else {
-          first = extractNovelFromText(raw, url);
-        }
-        if (!first || !first.text) throw new Error('no content');
-        let text = first.text;
-        let title = first.title;
-        const cjk = (text.match(/[\u4e00-\u9fa5]/g) || []).length;
-        if (cjk < 60 && text.length < 1000) throw new Error('too short');
-        if (p.html && rawHtml) {
-          let cursor = url;
-          const seen = {};
-          seen[url] = 1;
-          let doc = null;
-          try { doc = new DOMParser().parseFromString(rawHtml, 'text/html'); } catch (e) {}
-          let guard = 0;
-          while (doc && guard < NOVEL_MAX_PAGES - 1) {
-            guard++;
-            const nextUrl = findNextNovelPage(doc, cursor);
-            if (!nextUrl || seen[nextUrl]) break;
-            seen[nextUrl] = 1;
-            let nx = '';
-            try { nx = await fetchTextWithTimeout(p.wrap(nextUrl)); } catch (e) { break; }
-            if (!nx || !looksLikeHtml(nx)) break;
-            const part = extractNovelFromHtml(nx, nextUrl);
-            if (!part || !part.text) break;
-            text += '\n\n' + part.text;
-            rawHtml = nx;
-            cursor = nextUrl;
-            try { doc = new DOMParser().parseFromString(rawHtml, 'text/html'); } catch (e) { doc = null; }
-          }
-        }
-        text = text.trim();
-        if (!text || text.length < 100) throw new Error('too short');
-        return { title: title || '未命名小说', text: text };
-      } catch (e) {
-        lastErr = e;
-      }
-    }
-    throw lastErr || new Error('抓取失败');
-  }
-
-  function openNovelLink() {
-    openModal('导入链接',
-      '<label class="field"><span>章节链接</span><input id="nvLinkUrl" inputmode="url" autocomplete="off" placeholder="https://…"></label>' +
-      '<p class="hint" id="nvLinkHint">自动抓取这一章的正文；同一章分成多页时会顺着「下一页」读完。部分站点有防盗链或需要登录，抓不到就复制文字用「粘贴文本」。</p>',
-      '读取', function () {
-        const url = String(($('nvLinkUrl') && $('nvLinkUrl').value) || '').trim();
-        if (!url) { toast('先粘贴链接'); return false; }
-        const ok = $('mBtnOk'), hint = $('nvLinkHint');
-        if (ok) { ok.disabled = true; ok.textContent = '读取中…'; }
-        if (hint) hint.textContent = '正在读取正文，可能要等十几秒…';
-        fetchNovelByUrl(url).then(function (r) {
-          setNovelText(r.title, r.text);
-          closeModal();
-          toast('读到 ' + r.text.length + ' 字');
-        }).catch(function (e) {
-          if (hint) hint.innerHTML = '没抓到正文（可能是站点拦截、要登录，或链接不是章节页）。<br><a href="' + esc(url) + '" target="_blank" rel="noopener" style="color:var(--accent)">在浏览器打开这一页，复制文字后再用「粘贴文本」</a>';
-          if (ok) { ok.disabled = false; ok.textContent = '读取'; }
-          try { console.warn('[novel] link import failed', e); } catch (err) {}
-        });
-        return false;
-      });
-  }
-
   function openNovelPaste() {
     const n = state.novel || {};
     openModal('粘贴小说',
@@ -5941,8 +5724,6 @@ body.theme-mono .tab-item.active svg{color:#141414;}
   $('btnCloseNovel').addEventListener('click', function () { $('novel').classList.remove('show'); });
   $('btnNovelImport').addEventListener('click', function () { $('novelFileInput').click(); });
   $('btnNovelImport2').addEventListener('click', function () { $('novelFileInput').click(); });
-  $('btnNovelLink').addEventListener('click', openNovelLink);
-  $('btnNovelLink2').addEventListener('click', openNovelLink);
   $('btnNovelPaste').addEventListener('click', openNovelPaste);
   $('btnNovelPaste2').addEventListener('click', openNovelPaste);
   $('novelPrev').addEventListener('click', function () { goNovelPage(-1); });
