@@ -4,6 +4,15 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
 <title>字卡传讯 · 与梦角的对话</title>
+<meta name="theme-color" content="#ff6b9e">
+<meta name="description" content="和梦角聊天、打电话、收信的字卡小应用">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-180.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="字卡传讯">
 <style>
 /* ===================== 主题变量 ===================== */
 body.theme-imessage{
@@ -351,6 +360,47 @@ body.theme-mono .quote-box{border-left-color:#141414;}
 .bubble img{
   max-width:160px;max-height:160px;display:block;border-radius:8px;object-fit:contain;
 }
+.msg-bubble.image-bubble{padding:4px;overflow:hidden;}
+.msg-bubble.image-bubble img{max-width:min(240px,100%);max-height:260px;border-radius:12px;cursor:zoom-in;object-fit:cover;}
+.img-viewer{
+  position:fixed;inset:0;z-index:90;background:rgba(0,0,0,.88);
+  display:none;align-items:center;justify-content:center;padding:20px;
+}
+.img-viewer.show{display:flex;}
+.img-viewer img{max-width:100%;max-height:100%;border-radius:10px;}
+.img-viewer-close{
+  position:absolute;top:18px;right:18px;width:40px;height:40px;border-radius:50%;
+  display:grid;place-items:center;background:rgba(255,255,255,.16);color:#fff;
+  font-size:20px;cursor:pointer;user-select:none;
+}
+
+/* 信件 */
+.letter-card{
+  padding:14px;border-radius:14px;background:var(--panel-bg);border:1px solid var(--line);
+  display:flex;flex-direction:column;gap:8px;cursor:pointer;flex:none;transition:border-color .2s;
+}
+.letter-card:hover{border-color:var(--accent);}
+.letter-head{display:flex;align-items:center;gap:10px;}
+.letter-head .avatar{width:34px;height:34px;font-size:12px;}
+.letter-head b{font-size:14px;}
+.letter-head span{font-size:11px;color:var(--muted);}
+.letter-dot{width:8px;height:8px;border-radius:50%;background:#ff3b30;margin-left:auto;flex:none;}
+body.theme-mono .letter-dot{background:#141414;}
+.letter-excerpt{font-size:12.5px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.letter-body{display:none;flex-direction:column;gap:10px;padding-top:8px;border-top:1px dashed var(--line);}
+.letter-card.open .letter-body{display:flex;}
+.letter-card.open .letter-excerpt{display:none;}
+.letter-body p{margin:0;font-size:14px;line-height:1.85;white-space:pre-wrap;}
+.letter-emoji{font-size:20px;text-align:right;}
+.letter-sticker{max-width:120px;border-radius:8px;align-self:flex-end;}
+.letter-sign{font-size:12.5px;color:var(--muted);text-align:right;}
+.letter-empty{padding:36px 10px;text-align:center;color:var(--muted);font-size:13px;}
+.letter-badge{
+  min-width:18px;height:18px;padding:0 5px;border-radius:9px;
+  background:#ff3b30;color:#fff;font-size:11px;font-weight:600;
+  display:grid;place-items:center;line-height:1;
+}
+body.theme-mono .letter-badge{background:#141414;}
 
 /* 通话卡片 */
 .call-card{
@@ -568,8 +618,8 @@ body.theme-mono .quote-box{border-left-color:#141414;}
   padding:16px 16px 18px;
   background:var(--drawer-bg);color:var(--text);
   border-radius:var(--app-r) var(--app-r) 0 0;
-  transform:translate(-50%,0) translateX(103%);visibility:hidden;
-  transition:transform .32s cubic-bezier(.32,.72,.28,1), visibility .32s;
+  transform:translate(-50%,0);visibility:hidden;
+  transition:none;
   overflow:hidden;
 }
 .drawer.show{transform:translate(-50%,0);visibility:visible;}
@@ -967,6 +1017,12 @@ body.theme-mono .tab-item.active svg{color:#141414;}
         </div>
         <span>表情包</span>
       </div>
+      <div class="action-item" id="actImage">
+        <div class="icon-wrap">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="m21 15-4.5-4.5L6 21"/></svg>
+        </div>
+        <span>图片</span>
+      </div>
     </div>
     
     <!-- 表情包面板 -->
@@ -1270,8 +1326,31 @@ body.theme-mono .tab-item.active svg{color:#141414;}
       </div>
       <span class="badge-soon">打开</span>
     </div>
+    <div class="more-card" id="moreLetterCard" role="button" tabindex="0">
+      <div class="mc-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3 7 9 6 9-6"/></svg>
+      </div>
+      <div class="mc-info">
+        <b>信件</b>
+        <span>TA 从字卡里拼给你的信，到了时间会写给你</span>
+      </div>
+      <span class="letter-badge" id="moreLetterBadge" hidden></span>
+      <span class="badge-soon">打开</span>
+    </div>
     <p class="hint" style="padding:6px 2px;">更多新功能会陆续放在这里。</p>
   </div>
+</aside>
+
+<!-- ============ 信件 ============ -->
+<aside class="drawer" id="letters">
+  <div class="drawer-head">
+    <h2>信件</h2>
+    <button class="icon-btn" id="btnLetterCfg" aria-label="信件设置">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.6a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9c.2.44.62.75 1.1.87H21a2 2 0 1 1 0 4h-.09c-.48.12-.9.43-1.1.87z"/></svg>
+    </button>
+    <button class="icon-btn" id="btnCloseLetters">✕</button>
+  </div>
+  <div class="drawer-scroll" id="letterList"></div>
 </aside>
 
 <!-- ============ 一起听歌 ============ -->
@@ -1327,6 +1406,8 @@ body.theme-mono .tab-item.active svg{color:#141414;}
 <input type="file" id="callBgInput" accept="image/*" multiple hidden>
 <input type="file" id="fontInput" accept=".ttf,.otf,.woff,.woff2,font/ttf,font/otf,font/woff,font/woff2" hidden>
 <input type="file" id="cssInput" accept=".css,text/css" hidden>
+<input type="file" id="imageMsgInput" accept="image/*" hidden>
+<div class="img-viewer" id="imgViewer"><img id="imgViewerImg" alt="图片"><span class="img-viewer-close" id="imgViewerClose">✕</span></div>
 
 <script>
 (function () {
@@ -1387,6 +1468,15 @@ body.theme-mono .tab-item.active svg{color:#141414;}
     activeId: '',
     messages: [],
     lastId: null,
+    letters: [],
+    letterCfg: {
+      enabled: true,
+      intervalHours: 24,
+      minCards: 3,
+      maxCards: 6,
+      allowEmoji: true,
+      allowSticker: true
+    },
     songs: [],
     songIdx: -1
   };
@@ -1568,6 +1658,7 @@ body.theme-mono .tab-item.active svg{color:#141414;}
       stickers: lite ? state.stickers.map(s => ({ id: s.id })) : state.stickers,
       chars: state.chars,
       contacts: contacts, activeId: state.activeId,
+      letters: state.letters.slice(0, 50), letterCfg: state.letterCfg,
       messages: state.messages.slice(-400), lastId: state.lastId,
       songs: state.songs.map(function (s) { return { id: s.id, name: s.name, artist: s.artist, cover: s.cover, url: s.url || '' }; }),
       songIdx: state.songIdx
@@ -1736,6 +1827,10 @@ body.theme-mono .tab-item.active svg{color:#141414;}
     if (Array.isArray(d.chars)) state.chars = d.chars;
     if (Array.isArray(d.contacts)) state.contacts = d.contacts;
     if (typeof d.activeId === 'string') state.activeId = d.activeId;
+    if (Array.isArray(d.letters)) state.letters = d.letters;
+    if (d.letterCfg && typeof d.letterCfg === 'object') {
+      state.letterCfg = Object.assign({}, state.letterCfg, d.letterCfg);
+    }
     if (Array.isArray(d.messages)) state.messages = d.messages;
     if (typeof d.lastId === 'string') state.lastId = d.lastId;
     if (Array.isArray(d.songs)) state.songs = d.songs.filter(function (s) { return s && s.id; }).map(function (s) {
@@ -1866,6 +1961,39 @@ body.theme-mono .tab-item.active svg{color:#141414;}
       if (state.chatBgs.some(b => b.id === c.chatBgId) === false) c.chatBgId = '';
     });
     syncActiveFromContact(activeContact());
+
+    // 信件数据与设置
+    if (!Array.isArray(state.letters)) state.letters = [];
+    state.letters = state.letters.filter(l => l && typeof l === 'object');
+    state.letters.forEach(l => {
+      if (typeof l.id !== 'string' || !l.id) l.id = uid();
+      if (typeof l.cid !== 'string') l.cid = '';
+      if (typeof l.ts !== 'number' || !isFinite(l.ts)) l.ts = Date.now();
+      if (!Array.isArray(l.body)) l.body = [];
+      l.body = l.body.filter(t => typeof t === 'string');
+      if (typeof l.emoji !== 'string') l.emoji = '';
+      if (typeof l.sticker !== 'string') l.sticker = '';
+      if (typeof l.read !== 'boolean') l.read = false;
+    });
+    state.letters = state.letters.slice(0, 50);
+
+    const lc = state.letterCfg && typeof state.letterCfg === 'object' ? state.letterCfg : {};
+    const clampInt = (v, lo, hi, def) => {
+      v = Number(v);
+      if (!isFinite(v)) return def;
+      return Math.max(lo, Math.min(hi, Math.round(v)));
+    };
+    state.letterCfg = {
+      enabled: lc.enabled !== false,
+      intervalHours: clampInt(lc.intervalHours, 1, 720, 24),
+      minCards: clampInt(lc.minCards, 1, 20, 3),
+      maxCards: clampInt(lc.maxCards, 1, 20, 6),
+      allowEmoji: lc.allowEmoji !== false,
+      allowSticker: lc.allowSticker !== false
+    };
+    if (state.letterCfg.maxCards < state.letterCfg.minCards) {
+      state.letterCfg.maxCards = state.letterCfg.minCards;
+    }
   }
   function seedData() {
     Object.keys(SEED_GROUPS).forEach(g => {
@@ -1916,7 +2044,19 @@ body.theme-mono .tab-item.active svg{color:#141414;}
   const btnSend = $('btnSend');
 
   function toBottom(smooth) {
-    chatEl.scrollTo({ top: chatEl.scrollHeight, behavior: smooth === false ? 'auto' : 'smooth' });
+    if (!chatEl) return;
+    if (smooth === false) {
+      chatEl.scrollTop = chatEl.scrollHeight;
+      requestAnimationFrame(function () { chatEl.scrollTop = chatEl.scrollHeight; });
+    } else {
+      chatEl.scrollTo({ top: chatEl.scrollHeight, behavior: 'smooth' });
+    }
+  }
+  // 打开聊天后等布局稳定，再补两次贴底，避免停在最上面
+  function settleToBottom() {
+    toBottom(false);
+    setTimeout(function () { toBottom(false); }, 60);
+    setTimeout(function () { toBottom(false); }, 320);
   }
 
   window.jumpToMessage = function(msgId) {
@@ -1967,7 +2107,7 @@ body.theme-mono .tab-item.active svg{color:#141414;}
       let html = `<span class="recalled-msg ${isClickable && !msg.showOriginal ? 'clickable' : ''}" onclick="window.toggleRecall('${msg.id}')">${text}${isClickable && !msg.showOriginal ? ' (点击查看)' : ''}</span>`;
       
       if (isClickable && msg.showOriginal) {
-         if (msg.type === 'emoji') {
+         if (msg.type === 'emoji' || msg.type === 'image') {
              html += `<div class="recalled-content"><img src="${msg.originalContent}" style="max-width:100px"></div>`;
          } else {
              html += `<div class="recalled-content">${esc(msg.originalContent)}</div>`;
@@ -2016,6 +2156,13 @@ body.theme-mono .tab-item.active svg{color:#141414;}
     } else if (msg.type === 'emoji') {
       bubble.className = 'bubble msg-bubble';
       bubble.innerHTML = `<img src="${msg.content}" alt="表情包">`;
+    } else if (msg.type === 'image') {
+      bubble.className = 'bubble msg-bubble image-bubble';
+      bubble.innerHTML = `<img src="${msg.content}" alt="图片">`;
+      bubble.querySelector('img').addEventListener('click', function (e) {
+        e.stopPropagation();
+        openImageView(msg.content);
+      });
     } else {
       bubble.className = 'bubble msg-bubble';
       
@@ -2074,6 +2221,7 @@ body.theme-mono .tab-item.active svg{color:#141414;}
 
   function bannerPreview(msg) {
     if (msg.type === 'emoji') return '[表情包]';
+    if (msg.type === 'image') return '[图片]';
     if (msg.type === 'call') return msg.callStatus === 'busy' ? '对方正在与他人通话' : '[语音通话]';
     const t = String(msg.content || '').replace(/\s+/g, ' ').trim();
     return t.length > 36 ? t.slice(0, 36) + '…' : t;
@@ -2081,10 +2229,12 @@ body.theme-mono .tab-item.active svg{color:#141414;}
 
   let bannerTimer = null;
   let bannerContactId = '';
+  let bannerLetterId = '';
   function showMsgBanner(c, msg) {
     const el = $('msgBanner');
     if (!el || !c) return;
     bannerContactId = c.id;
+    bannerLetterId = '';
     paintAvatar($('bannerAvatar'), c.avatar, c.name);
     $('bannerName').textContent = c.name || '梦角';
     $('bannerText').textContent = bannerPreview(msg);
@@ -2503,6 +2653,33 @@ body.theme-mono .tab-item.active svg{color:#141414;}
   $('actCall').addEventListener('click', () => {
     $('actionPanel').classList.remove('show');
     startCall('outgoing');
+  });
+
+  $('actImage').addEventListener('click', () => {
+    $('actionPanel').classList.remove('show');
+    $('imageMsgInput').click();
+  });
+
+  $('imageMsgInput').addEventListener('change', function (e) {
+    const f = e.target.files && e.target.files[0];
+    e.target.value = '';
+    if (!f) return;
+    compressImage(f, 1000, function (url) {
+      if (!url) { toast('图片读取失败'); return; }
+      pushMessage('me', 'image', url);
+      queueReply();
+    });
+  });
+
+  window.openImageView = function (url) {
+    if (!url) return;
+    $('imgViewerImg').src = url;
+    $('imgViewer').classList.add('show');
+  };
+  $('imgViewer').addEventListener('click', function () { this.classList.remove('show'); });
+  $('imgViewerClose').addEventListener('click', function (e) {
+    e.stopPropagation();
+    $('imgViewer').classList.remove('show');
   });
 
   $('actSticker').addEventListener('click', () => {
@@ -3271,6 +3448,7 @@ body.theme-mono .tab-item.active svg{color:#141414;}
   function switchPage(page) {
     Object.keys(PAGE_MAP).forEach(k => PAGE_MAP[k].classList.remove('show'));
     $('music').classList.remove('show');
+    $('letters').classList.remove('show');
     if (page === 'lib') {
       openLib();
     } else if (page === 'set') {
@@ -3531,6 +3709,7 @@ body.theme-mono .tab-item.active svg{color:#141414;}
     if (m.role === 'sys') return String(m.content || '');
     const prefix = m.role === 'me' ? '我: ' : '';
     if (m.type === 'emoji') return prefix + '[表情包]';
+    if (m.type === 'image') return prefix + '[图片]';
     if (m.type === 'call') {
       if (m.callStatus === 'busy') return '[语音通话] 对方正在与他人通话';
       if (m.callStatus === 'answered') return '[语音通话] 通话 ' + (m.duration || '');
@@ -3593,7 +3772,7 @@ body.theme-mono .tab-item.active svg{color:#141414;}
     chatEl.innerHTML = '';
     c.messages.forEach(m => chatEl.appendChild(buildMessage(m)));
     if (c.typing) showTyping();
-    toBottom(false);
+    settleToBottom();
     renderContactList();
     save();
   }
@@ -3704,9 +3883,183 @@ body.theme-mono .tab-item.active svg{color:#141414;}
   });
 
   $('msgBanner').addEventListener('click', function () {
+    const lid = bannerLetterId;
     const c = contactById(bannerContactId);
     $('msgBanner').classList.remove('show');
+    bannerLetterId = '';
+    if (lid) { openLetters(lid); return; }
     if (c) openChat(c.id);
+  });
+
+  /* ================= 信件 ================= */
+  const LETTER_EMOJI = ['🌙', '✨', '💗', '🌷', '☁️', '🫧', '🍓', '🌿', '🎐', '💫', '🌌', '🐾'];
+  const letterListEl = $('letterList');
+  let letterTimer = null;
+
+  function letterContact(l) { return contactById(l.cid) || activeContact(); }
+  function letterDate(ts) {
+    const dt = new Date(ts);
+    return dt.getFullYear() + '.' + (dt.getMonth() + 1) + '.' + dt.getDate() + ' ' + fmtTime(ts);
+  }
+  function updateLetterBadge() {
+    const b = $('moreLetterBadge');
+    if (!b) return;
+    const n = state.letters.filter(l => !l.read).length;
+    b.hidden = n <= 0;
+    b.textContent = n > 99 ? '99+' : String(n);
+  }
+  function renderLetters(openId) {
+    if (!letterListEl) return;
+    if (!state.letters.length) {
+      letterListEl.innerHTML = '<div class="letter-empty">还没有收到信。到了设定时间，TA 会从字卡里挑几张拼一封信给你～</div>';
+      updateLetterBadge();
+      return;
+    }
+    letterListEl.innerHTML = state.letters.map(function (l) {
+      const c = letterContact(l) || {};
+      const name = c.name || '梦角';
+      const avText = c.avatar ? '' : String(name).slice(0, 1);
+      const excerpt = esc(String(l.body[0] || '').slice(0, 60));
+      return '<div class="letter-card' + (openId === l.id ? ' open' : '') + '" data-lid="' + esc(l.id) + '">' +
+        '<div class="letter-head"><div class="avatar">' + esc(avText) + '</div>' +
+        '<div style="display:flex;flex-direction:column;gap:2px;min-width:0;"><b>' + esc(name) + '</b><span>' + esc(letterDate(l.ts)) + '</span></div>' +
+        (l.read ? '' : '<span class="letter-dot"></span>') + '</div>' +
+        '<div class="letter-excerpt">' + excerpt + '</div>' +
+        '<div class="letter-body">' +
+          '<p>致 ' + esc(state.userName || '我') + '：</p>' +
+          l.body.map(function (t) { return '<p>' + esc(t) + '</p>'; }).join('') +
+          (l.emoji ? '<div class="letter-emoji">' + esc(l.emoji) + '</div>' : '') +
+          (l.sticker ? '<img class="letter-sticker" src="' + l.sticker + '" alt="表情包">' : '') +
+          '<div class="letter-sign">—— ' + esc(name) + '</div>' +
+        '</div></div>';
+    }).join('');
+    letterListEl.querySelectorAll('[data-lid]').forEach(function (card) {
+      const l = state.letters.find(function (x) { return x.id === card.dataset.lid; });
+      const c = l && letterContact(l);
+      if (c) paintAvatar(card.querySelector('.avatar'), c.avatar, c.name);
+    });
+    updateLetterBadge();
+  }
+  function renderLettersIfOpen() {
+    renderLetters();
+  }
+
+  function showLetterBanner(l, c) {
+    const el = $('msgBanner');
+    if (!el || !c) return;
+    bannerContactId = c.id;
+    bannerLetterId = l.id;
+    paintAvatar($('bannerAvatar'), c.avatar, c.name);
+    $('bannerName').textContent = c.name || '梦角';
+    $('bannerText').textContent = '给你写了一封信';
+    el.classList.add('show');
+    clearTimeout(bannerTimer);
+    bannerTimer = setTimeout(function () { el.classList.remove('show'); }, 4000);
+  }
+
+  function writeLetter() {
+    const c = activeContact();
+    if (!c) return null;
+    const pool = state.cards.filter(function (x) {
+      return x && !x.off && !isGroupOff(x.group) && typeof x.text === 'string' && x.text.trim();
+    });
+    if (!pool.length) return null;
+    const cfg = state.letterCfg;
+    const pick = Math.floor(Math.random() * (cfg.maxCards - cfg.minCards + 1)) + cfg.minCards;
+    const n = Math.max(1, Math.min(pick, pool.length));
+    const shuffled = pool.slice().sort(function () { return Math.random() - 0.5; });
+    const chosen = shuffled.slice(0, n);
+    const letter = {
+      id: uid(),
+      cid: c.id,
+      ts: Date.now(),
+      body: chosen.map(function (x) { return x.text.trim(); }),
+      emoji: cfg.allowEmoji ? LETTER_EMOJI[Math.floor(Math.random() * LETTER_EMOJI.length)] : '',
+      sticker: (cfg.allowSticker && state.stickers.length)
+        ? state.stickers[Math.floor(Math.random() * state.stickers.length)].url : '',
+      read: false
+    };
+    state.letters.unshift(letter);
+    if (state.letters.length > 50) state.letters.length = 50;
+    if ($('letters').classList.contains('show')) {
+      letter.read = true;
+      renderLettersIfOpen();
+    } else {
+      showLetterBanner(letter, c);
+    }
+    save();
+    updateLetterBadge();
+    return letter;
+  }
+
+  function checkLetterDue() {
+    const cfg = state.letterCfg;
+    if (!cfg.enabled || !state.contacts.length) return;
+    const poolReady = state.cards.some(function (x) {
+      return x && !x.off && !isGroupOff(x.group) && typeof x.text === 'string' && x.text.trim();
+    });
+    if (!poolReady) return;
+    const latest = state.letters.reduce(function (m, l) { return Math.max(m, l.ts || 0); }, 0);
+    if (latest && Date.now() - latest < cfg.intervalHours * 3600000) return;
+    writeLetter();
+  }
+
+  function openLetters(focusId) {
+    $('more').classList.add('show');
+    $('music').classList.remove('show');
+    currentPage = 'more';
+    setTabActive('more');
+    let changed = false;
+    state.letters.forEach(function (l) { if (!l.read) { l.read = true; changed = true; } });
+    if (changed) save();
+    renderLetters(focusId);
+    $('letters').classList.add('show');
+    updateLetterBadge();
+    if (focusId) {
+      setTimeout(function () {
+        const card = letterListEl.querySelector('[data-lid="' + focusId + '"]');
+        if (card) { card.classList.add('open'); card.scrollIntoView({ block: 'nearest' }); }
+      }, 80);
+    }
+  }
+
+  function openLetterSettings() {
+    const cfg = state.letterCfg;
+    const sw = function (on) { return 'sw' + (on ? '' : ' off'); };
+    openModal('信件设置',
+      '<label class="field"><span>每隔多少小时写一封</span><input id="lcInterval" type="number" min="1" max="720" value="' + cfg.intervalHours + '"></label>' +
+      '<label class="field"><span>最少拼几张字卡</span><input id="lcMin" type="number" min="1" max="20" value="' + cfg.minCards + '"></label>' +
+      '<label class="field"><span>最多拼几张字卡</span><input id="lcMax" type="number" min="1" max="20" value="' + cfg.maxCards + '"></label>' +
+      '<div class="field"><span>信里可以包含</span>' +
+        '<div style="display:flex;align-items:center;justify-content:space-between;gap:10px;margin:6px 0;"><span style="font-size:13px;">Emoji</span><button class="' + sw(cfg.allowEmoji) + '" id="lcEmoji"></button></div>' +
+        '<div style="display:flex;align-items:center;justify-content:space-between;gap:10px;"><span style="font-size:13px;">表情包（最多一张）</span><button class="' + sw(cfg.allowSticker) + '" id="lcSticker"></button></div>' +
+      '</div>' +
+      '<p class="hint">到时间 TA 会自动从字卡里挑几张拼成一封信，并在顶部提示你；点提示会直接打开这封信。</p>',
+      '保存', function () {
+        const intv = Number(($('lcInterval').value || '').trim());
+        const lo = Number(($('lcMin').value || '').trim());
+        const hi = Number(($('lcMax').value || '').trim());
+        cfg.intervalHours = Math.max(1, Math.min(720, Math.round(isFinite(intv) ? intv : 24)));
+        cfg.minCards = Math.max(1, Math.min(20, Math.round(isFinite(lo) ? lo : 3)));
+        cfg.maxCards = Math.max(cfg.minCards, Math.min(20, Math.round(isFinite(hi) ? hi : 6)));
+        cfg.allowEmoji = !$('lcEmoji').classList.contains('off');
+        cfg.allowSticker = !$('lcSticker').classList.contains('off');
+        save();
+        toast('信件设置已保存');
+        checkLetterDue();
+        return true;
+      });
+    $('lcEmoji').addEventListener('click', function () { this.classList.toggle('off'); });
+    $('lcSticker').addEventListener('click', function () { this.classList.toggle('off'); });
+  }
+
+  $('moreLetterCard').addEventListener('click', function () { openLetters(); });
+  $('btnCloseLetters').addEventListener('click', function () { $('letters').classList.remove('show'); });
+  $('btnLetterCfg').addEventListener('click', openLetterSettings);
+  letterListEl.addEventListener('click', function (e) {
+    const card = e.target.closest('[data-lid]');
+    if (!card) return;
+    card.classList.toggle('open');
   });
 
   /* 主题切换 */
@@ -4346,17 +4699,29 @@ body.theme-mono .tab-item.active svg{color:#141414;}
     state.messages.forEach(m => {
        chatEl.appendChild(buildMessage(m));
     });
-    toBottom(false);
+    settleToBottom();
     renderContactList();
+    updateLetterBadge();
 
     resizeInput();
     updateSendState();
+
+    // 信件：到点检查一次，之后每分钟检查
+    setTimeout(checkLetterDue, 900);
+    letterTimer = setInterval(checkLetterDue, 60000);
 
     if (migratedFromKey) {
       setTimeout(function () {
         toast('已自动恢复旧版本数据（' + migratedFromKey + '）');
       }, 600);
     }
+  }
+
+  // PWA：安装到桌面后可独立打开（仅 https 下注册）
+  if ('serviceWorker' in navigator && location.protocol === 'https:') {
+    window.addEventListener('load', function () {
+      navigator.serviceWorker.register('./sw.js').catch(function () {});
+    });
   }
 
   // 优先使用 IndexedDB 里的大容量数据；没有时回退到旧版 localStorage 数据
