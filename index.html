@@ -670,6 +670,58 @@ body.theme-mono .moment-action.liked{color:#141414;}
 .action-item:hover .icon-wrap{background:var(--card-hover);}
 .action-item .icon-wrap svg{width:22px;height:22px;color:var(--text);}
 
+/* 问卷卡片 */
+.survey-card{
+  max-width:300px;padding:12px 12px 9px;
+  background:var(--panel-bg);border:1px solid var(--line);
+}
+.sv-head{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:9px;font-size:11px;color:var(--muted);}
+.sv-head b{font-size:12px;color:var(--text);font-weight:600;}
+.sv-q{margin-bottom:10px;}
+.sv-q:last-child{margin-bottom:0;}
+.sv-qtext{font-size:13px;font-weight:600;line-height:1.5;color:var(--text);margin-bottom:6px;word-break:break-word;}
+.sv-opt{
+  display:flex;align-items:center;gap:7px;margin-top:5px;padding:7px 9px;
+  border:1px solid var(--line);border-radius:9px;
+  background:var(--app-bg);color:var(--text);
+  font-size:12.5px;line-height:1.4;word-break:break-word;
+}
+.sv-opt.picked{border-color:var(--accent);box-shadow:inset 0 0 0 1px var(--accent);}
+.sv-letter{flex:none;width:16px;font-size:12px;color:var(--muted);}
+.sv-otext{flex:1;}
+.sv-check{flex:none;color:var(--accent);font-weight:700;margin-right:1px;}
+.sv-opt.picked .sv-letter{color:var(--accent);font-weight:700;}
+
+/* 问卷编辑器 */
+.sv-type-row{display:flex;gap:8px;}
+.sv-type{
+  flex:1;padding:9px;border-radius:10px;border:1px solid var(--line);
+  background:var(--panel-bg);color:var(--text);font-size:13px;cursor:pointer;transition:.2s;
+}
+.sv-type.active{background:var(--accent);color:var(--accent-contrast);border-color:var(--accent);font-weight:600;}
+.survey-editor{display:flex;flex-direction:column;gap:10px;}
+.sv-qblock{display:flex;flex-direction:column;gap:7px;padding:10px;border:1px solid var(--line);border-radius:12px;background:var(--panel-bg);}
+.sv-qhead{display:flex;align-items:center;justify-content:space-between;font-size:12px;color:var(--muted);}
+.sv-del{border:none;background:transparent;color:var(--muted);font-size:12px;cursor:pointer;padding:2px 4px;}
+.sv-del:hover{color:var(--accent);}
+.sv-qinput{
+  width:100%;padding:9px 10px;border-radius:9px;border:1px solid var(--input-border);
+  background:var(--input-bg);color:var(--text);font-size:13px;outline:none;
+}
+.sv-qinput:focus{border-color:var(--accent);}
+.sv-opt-row{display:flex;align-items:center;gap:7px;}
+.sv-opt-lab{flex:none;width:16px;font-size:12px;color:var(--muted);text-align:center;}
+.sv-opt-row input{
+  flex:1;min-width:0;padding:8px 10px;border-radius:9px;border:1px solid var(--input-border);
+  background:var(--input-bg);color:var(--text);font-size:12.5px;outline:none;
+}
+.sv-opt-row input:focus{border-color:var(--accent);}
+.sv-add{
+  width:100%;padding:9px;border-radius:10px;border:1px dashed var(--line);
+  background:transparent;color:var(--muted);font-size:13px;cursor:pointer;
+}
+.sv-add:hover{border-color:var(--accent);color:var(--accent);}
+
 /* 表情包面板 */
 .emoji-panel{
   position:absolute;bottom:100%;left:10px;right:10px;
@@ -1202,6 +1254,12 @@ body.theme-mono .tab-item.active svg{color:#141414;}
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="m21 15-4.5-4.5L6 21"/></svg>
         </div>
         <span>图片</span>
+      </div>
+      <div class="action-item" id="actSurvey">
+        <div class="icon-wrap">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="3" width="16" height="18" rx="3"/><path d="M8 8h8M8 12h8M8 16h5"/><path d="m15.5 16 1.2 1.2 2.3-2.4"/></svg>
+        </div>
+        <span>问卷</span>
       </div>
     </div>
     
@@ -1868,8 +1926,8 @@ body.theme-mono .tab-item.active svg{color:#141414;}
   }
 
   function playMessageSound() {
-    tone(1046, 0, 0.09, 0.06);
-    tone(1318, 0.11, 0.14, 0.05);
+    tone(1046, 0, 0.1, 0.18);
+    tone(1318, 0.11, 0.16, 0.15);
   }
 
   function startCallSound(kind) {
@@ -2471,6 +2529,27 @@ body.theme-mono .tab-item.active svg{color:#141414;}
     }
   };
 
+  function surveyCardHtml(s) {
+    if (!s || !Array.isArray(s.questions)) return '<div class="sv-head"><b>问卷</b></div>';
+    const letters = 'ABCD';
+    let html = '<div class="sv-head"><b>问卷 · ' + (s.multi ? '多选' : '单选') + '</b><span>' +
+      (s.answered ? '已作答' : '等待作答') + '</span></div>';
+    s.questions.forEach(function (q, qi) {
+      const opts = q && Array.isArray(q.options) ? q.options : [];
+      const picked = q && Array.isArray(q.answers) ? q.answers : [];
+      html += '<div class="sv-q"><div class="sv-qtext">' + (qi + 1) + '. ' + esc(q && q.q ? q.q : '') + '</div>';
+      opts.forEach(function (opt, oi) {
+        const on = s.answered && picked.indexOf(oi) !== -1;
+        html += '<div class="sv-opt' + (on ? ' picked' : '') + '">' +
+          (on ? '<span class="sv-check">✓</span>' : '') +
+          '<span class="sv-letter">' + letters[oi] + '</span>' +
+          '<span class="sv-otext">' + esc(opt) + '</span></div>';
+      });
+      html += '</div>';
+    });
+    return html;
+  }
+
   function buildMessage(msg) {
     if (msg.role === 'sys') {
       const note = document.createElement('div');
@@ -2577,6 +2656,9 @@ body.theme-mono .tab-item.active svg{color:#141414;}
         e.stopPropagation();
         openNowPlaying(msg.songIdx);
       });
+    } else if (msg.type === 'survey') {
+      bubble.className = 'bubble msg-bubble survey-card';
+      bubble.innerHTML = surveyCardHtml(msg.survey);
     } else if (msg.type === 'image') {
       bubble.className = 'bubble msg-bubble image-bubble';
       bubble.innerHTML = `<img src="${msg.content}" alt="图片">`;
@@ -2645,6 +2727,7 @@ body.theme-mono .tab-item.active svg{color:#141414;}
     if (msg.type === 'image') return '[图片]';
     if (msg.type === 'music') return '邀请你一起听《' + String(msg.content || '').slice(0, 20) + '》';
     if (msg.type === 'lyric') return '摘一句：' + String(msg.content || '').replace(/\s+/g, ' ').slice(0, 26);
+    if (msg.type === 'survey') return '[问卷] ' + (msg.survey && msg.survey.questions && msg.survey.questions[0] ? msg.survey.questions[0].q : '');
     if (msg.type === 'call') return msg.callStatus === 'busy' ? '对方正在与他人通话' : '[语音通话]';
     const t = String(msg.content || '').replace(/\s+/g, ' ').trim();
     return t.length > 36 ? t.slice(0, 36) + '…' : t;
@@ -2678,6 +2761,7 @@ body.theme-mono .tab-item.active svg{color:#141414;}
     if (msg.type === 'image') return '[图片]';
     if (msg.type === 'music') return '邀请你一起听《' + (msg.content || '') + '》';
     if (msg.type === 'lyric') return '摘一句：' + String(msg.content || '').replace(/\n/g, ' / ');
+    if (msg.type === 'survey') return '[问卷] ' + (msg.survey && msg.survey.questions && msg.survey.questions[0] ? msg.survey.questions[0].q : '');
     if (msg.type === 'call') return '[语音通话]';
     return String(msg.content || '').slice(0, 80);
   }
@@ -2821,6 +2905,44 @@ body.theme-mono .tab-item.active svg{color:#141414;}
 
   function pushMessage(role, type, content, extra = {}) {
     return pushMessageTo(activeContact(), role, type, content, extra);
+  }
+
+  /* 问卷：TA 在 30 秒内作答 */
+  function answerSurveyMessage(msg, contact) {
+    if (!msg || !msg.survey || msg.survey.answered) return false;
+    const s = msg.survey;
+    if (!Array.isArray(s.questions)) return false;
+    s.questions.forEach(function (q) {
+      const n = q && Array.isArray(q.options) ? q.options.length : 0;
+      if (!n) { if (q) q.answers = []; return; }
+      if (s.multi) {
+        const count = Math.min(n, 2 + Math.floor(Math.random() * Math.max(1, n - 1)));
+        const idxs = [];
+        for (let i = 0; i < n; i++) idxs.push(i);
+        idxs.sort(function () { return Math.random() - 0.5; });
+        q.answers = idxs.slice(0, count).sort(function (a, b) { return a - b; });
+      } else {
+        q.answers = [Math.floor(Math.random() * n)];
+      }
+    });
+    s.answered = true;
+    s.answeredAt = Date.now();
+    if (contact === activeContact()) updateMessageDOM(msg);
+    if (state.soundEnabled) playMessageSound();
+    save();
+    return true;
+  }
+
+  function processSurveyDue() {
+    const now = Date.now();
+    state.contacts.forEach(function (c) {
+      (c.messages || []).forEach(function (m) {
+        if (!m || m.type !== 'survey' || !m.survey || m.survey.answered) return;
+        if (typeof m.survey.dueAt === 'number' && m.survey.dueAt <= now) {
+          answerSurveyMessage(m, c);
+        }
+      });
+    });
   }
 
   let typingEl = null;
@@ -3298,6 +3420,107 @@ body.theme-mono .tab-item.active svg{color:#141414;}
       queueReply();
     });
   });
+
+  /* 问卷编辑器 */
+  let surveyDraft = null;
+
+  function surveyEditorBody() {
+    return '<div class="sv-type-row">' +
+        '<button type="button" class="sv-type active" data-multi="0">单选</button>' +
+        '<button type="button" class="sv-type" data-multi="1">多选</button>' +
+      '</div>' +
+      '<div class="survey-editor" id="svEditor"></div>' +
+      '<button type="button" class="sv-add" id="svAddQ">+ 添加一个问题</button>' +
+      '<p class="hint">A、B 必填，C、D 可以留空；可以一次发多个问题。TA 会在 30 秒内作答。</p>';
+  }
+
+  function renderSurveyEditor() {
+    const ed = $('svEditor');
+    if (!ed || !surveyDraft) return;
+    ed.innerHTML = surveyDraft.questions.map(function (q, qi) {
+      const opts = q.options || ['', '', '', ''];
+      const optRows = ['A', 'B', 'C', 'D'].map(function (lab, oi) {
+        return '<div class="sv-opt-row"><span class="sv-opt-lab">' + lab + '</span>' +
+          '<input data-sv-opt="' + oi + '" placeholder="' + (oi < 2 ? '必填' : '选填') + '" value="' + esc(opts[oi] || '') + '"></div>';
+      }).join('');
+      return '<div class="sv-qblock" data-qi="' + qi + '">' +
+        '<div class="sv-qhead"><span>问题 ' + (qi + 1) + '</span>' +
+          (surveyDraft.questions.length > 1 ? '<button type="button" class="sv-del" data-sv-del="' + qi + '">删除</button>' : '') +
+        '</div>' +
+        '<input class="sv-qinput" data-sv-q placeholder="写下问题…" value="' + esc(q.q || '') + '">' +
+        optRows + '</div>';
+    }).join('');
+    ed.querySelectorAll('[data-sv-del]').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        collectSurveyDraft();
+        surveyDraft.questions.splice(Number(btn.getAttribute('data-sv-del')), 1);
+        if (!surveyDraft.questions.length) surveyDraft.questions.push({ q: '', options: ['', '', '', ''] });
+        renderSurveyEditor();
+      });
+    });
+  }
+
+  function collectSurveyDraft() {
+    if (!surveyDraft) return;
+    const ed = $('svEditor');
+    if (!ed) return;
+    ed.querySelectorAll('.sv-qblock').forEach(function (block, i) {
+      const q = surveyDraft.questions[i];
+      if (!q) return;
+      q.q = block.querySelector('[data-sv-q]').value;
+      block.querySelectorAll('[data-sv-opt]').forEach(function (inp) {
+        q.options[Number(inp.getAttribute('data-sv-opt'))] = inp.value;
+      });
+    });
+  }
+
+  function sendSurveyFromDraft() {
+    collectSurveyDraft();
+    if (!surveyDraft || !surveyDraft.questions.length) return false;
+    const clean = [];
+    for (let i = 0; i < surveyDraft.questions.length; i++) {
+      const q = surveyDraft.questions[i];
+      const question = String(q.q || '').trim();
+      const options = (q.options || []).map(function (x) { return String(x || '').trim(); }).filter(Boolean);
+      if (!question) { toast('请先写下问题'); return false; }
+      if (options.length < 2) { toast('每个问题至少写 A、B 两个选项'); return false; }
+      clean.push({ q: question, options: options, answers: [] });
+    }
+    const c = activeContact();
+    if (!c) { toast('先选择一个梦角'); return false; }
+    const delay = 2500 + Math.random() * 23500;
+    const survey = { multi: !!surveyDraft.multi, questions: clean, answered: false, dueAt: Date.now() + delay };
+    const msg = pushMessage('me', 'survey', '问卷', { survey: survey });
+    setTimeout(function () {
+      if (msg && msg.survey && !msg.survey.answered) answerSurveyMessage(msg, c);
+    }, delay);
+    return true;
+  }
+
+  function openSurveyComposer() {
+    $('actionPanel').classList.remove('show');
+    surveyDraft = { multi: false, questions: [{ q: '', options: ['', '', '', ''] }] };
+    openModal('发问卷', surveyEditorBody(), '发送', function () { return sendSurveyFromDraft(); });
+    const typeBtns = modalBody.querySelectorAll('.sv-type');
+    typeBtns.forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        surveyDraft.multi = btn.getAttribute('data-multi') === '1';
+        typeBtns.forEach(function (b) { b.classList.toggle('active', b === btn); });
+      });
+    });
+    $('svAddQ').addEventListener('click', function () {
+      collectSurveyDraft();
+      if (surveyDraft.questions.length >= 10) { toast('一次最多 10 个问题'); return; }
+      surveyDraft.questions.push({ q: '', options: ['', '', '', ''] });
+      renderSurveyEditor();
+      const blocks = $('svEditor').querySelectorAll('.sv-qblock');
+      const last = blocks[blocks.length - 1];
+      if (last) last.querySelector('[data-sv-q]').focus();
+    });
+    renderSurveyEditor();
+  }
+
+  $('actSurvey').addEventListener('click', openSurveyComposer);
 
   window.openImageView = function (url) {
     if (!url) return;
@@ -6342,6 +6565,9 @@ body.theme-mono .tab-item.active svg{color:#141414;}
     initProactiveSchedule();
     setTimeout(checkProactiveDue, 2000);
     setInterval(checkProactiveDue, 30000);
+    // 问卷：每 2 秒检查一次是否到 30 秒作答时间
+    processSurveyDue();
+    setInterval(processSurveyDue, 2000);
     updateNotifyBtn();
     updateKeepAliveBtn();
 
@@ -6393,6 +6619,7 @@ body.theme-mono .tab-item.active svg{color:#141414;}
     checkMomentDue();
     processMomentPending();
     checkProactiveDue();
+    processSurveyDue();
     state.contacts.forEach(function (c) {
       if (!c || c.busy || !c.replyDueAt) return;
       if (Date.now() >= c.replyDueAt) {
