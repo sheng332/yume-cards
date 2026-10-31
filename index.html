@@ -748,50 +748,6 @@ body.theme-mono .moment-action.liked{color:#141414;}
 }
 .sv-add:hover{border-color:var(--accent);color:var(--accent);}
 
-/* 一起看小说 */
-.novel-body{flex:1;min-height:0;display:flex;flex-direction:column;}
-.novel-empty{
-  flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;
-  gap:10px;text-align:center;padding:24px 14px;color:var(--muted);
-}
-.novel-empty[hidden]{display:none;}
-.novel-empty-icon{
-  width:66px;height:66px;border-radius:20px;display:grid;place-items:center;
-  background:var(--panel-bg);color:var(--accent);margin-bottom:2px;
-}
-.novel-empty-icon svg{width:30px;height:30px;}
-.novel-empty b{font-size:16px;color:var(--text);}
-.novel-empty p{font-size:12.5px;line-height:1.75;max-width:290px;margin:0;}
-.novel-reader{flex:1;min-height:0;display:flex;flex-direction:column;gap:9px;}
-.novel-reader[hidden]{display:none;}
-.novel-meta{display:flex;align-items:center;justify-content:space-between;gap:10px;flex:none;padding:0 2px;}
-.novel-meta b{font-size:13.5px;font-weight:600;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
-.novel-meta span{flex:none;font-size:11.5px;color:var(--muted);}
-.novel-text{
-  flex:1;min-height:0;overflow-y:auto;white-space:pre-wrap;word-break:break-word;
-  padding:16px 15px;border-radius:14px;border:1px solid var(--line);
-  background:var(--panel-bg);color:var(--text);
-  font-size:15.5px;line-height:1.95;text-align:justify;
-  -webkit-overflow-scrolling:touch;overscroll-behavior:contain;
-}
-.novel-text::-webkit-scrollbar{width:6px;}
-.novel-text::-webkit-scrollbar-thumb{background:rgba(128,128,128,.28);border-radius:99px;}
-.novel-foot{display:flex;align-items:center;justify-content:space-between;gap:8px;flex:none;}
-.novel-foot span{flex:1;text-align:center;font-size:11.5px;color:var(--muted);}
-.novel-nav{
-  flex:none;padding:9px 15px;border-radius:10px;border:1px solid var(--line);
-  background:var(--panel-bg);color:var(--text);font-size:12.5px;cursor:pointer;transition:.2s;
-}
-.novel-nav:hover{border-color:var(--accent);color:var(--accent);}
-.novel-nav:disabled{opacity:.35;cursor:default;}
-.novel-companion{
-  flex:none;min-height:42px;display:flex;align-items:center;gap:8px;
-  padding:9px 12px;border-radius:11px;border-left:3px solid var(--accent);
-  background:var(--card-hover);color:var(--muted);font-size:12.5px;line-height:1.55;
-  word-break:break-word;
-}
-.novel-companion b{color:var(--text);font-weight:600;flex:none;}
-
 /* 表情包面板 */
 .emoji-panel{
   position:absolute;bottom:100%;left:10px;right:10px;
@@ -1723,17 +1679,6 @@ body.theme-mono .tab-item.active svg{color:#141414;}
       <span class="letter-badge" id="moreMomentBadge" hidden></span>
       <span class="badge-soon">打开</span>
     </div>
-    <div class="more-card" id="moreNovelCard" role="button" tabindex="0">
-      <div class="mc-icon">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5.5A2.5 2.5 0 0 1 6.5 3H20v16H6.5A2.5 2.5 0 0 0 4 21.5Z"/><path d="M4 5.5v16"/><path d="M8 7h8M8 11h8"/></svg>
-      </div>
-      <div class="mc-info">
-        <b>一起看小说</b>
-        <span>导入小说或粘贴文本，TA 会陪在你旁边一起读</span>
-      </div>
-      <span class="letter-badge" id="moreNovelBadge" hidden></span>
-      <span class="badge-soon">打开</span>
-    </div>
     <p class="hint" style="padding:6px 2px;">更多新功能会陆续放在这里。</p>
   </div>
 </aside>
@@ -1766,47 +1711,6 @@ body.theme-mono .tab-item.active svg{color:#141414;}
     <button class="icon-btn" id="btnCloseMoments">✕</button>
   </div>
   <div class="drawer-scroll" id="momentList"></div>
-</aside>
-
-<!-- ============ 一起看小说 ============ -->
-<aside class="drawer" id="novel">
-  <div class="drawer-head">
-    <h2>一起看小说</h2>
-    <button class="icon-btn" id="btnNovelImport" aria-label="导入 TXT">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 16V4"/><path d="m7.5 8.5 4.5-4.5 4.5 4.5"/><path d="M4 16v3a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-3"/></svg>
-    </button>
-    <button class="icon-btn" id="btnNovelPaste" aria-label="粘贴文本">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="7" y="4" width="10" height="4" rx="1.5"/><path d="M9 4H6a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2h-3"/></svg>
-    </button>
-    <button class="icon-btn" id="btnCloseNovel">✕</button>
-  </div>
-  <div class="novel-body">
-    <div class="novel-empty" id="novelEmpty">
-      <div class="novel-empty-icon">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5.5A2.5 2.5 0 0 1 6.5 3H20v16H6.5A2.5 2.5 0 0 0 4 21.5Z"/><path d="M4 5.5v16"/><path d="M8 7h8M8 11h8"/></svg>
-      </div>
-      <b>还没有小说</b>
-      <p>导入 TXT 或粘贴一段小说，TA 会陪在你旁边，一边看一边和你说说话。</p>
-      <div class="lib-actions">
-        <button class="chip" id="btnNovelImport2">导入 TXT</button>
-        <button class="chip" id="btnNovelPaste2">粘贴文本</button>
-      </div>
-    </div>
-    <div class="novel-reader" id="novelReader" hidden>
-      <div class="novel-meta">
-        <b id="novelTitle"></b>
-        <span id="novelProgress"></span>
-      </div>
-      <div class="novel-text" id="novelText"></div>
-      <div class="novel-foot">
-        <button class="novel-nav" id="novelPrev">上一页</button>
-        <span id="novelPageInfo"></span>
-        <button class="novel-nav" id="novelNext">下一页</button>
-      </div>
-      <div class="novel-companion" id="novelCompanion">TA 在你旁边陪你一起看</div>
-    </div>
-  </div>
-  <input type="file" id="novelFileInput" accept=".txt,text/plain" hidden>
 </aside>
 
 <!-- ============ 一起听歌 ============ -->
@@ -1952,7 +1856,6 @@ body.theme-mono .tab-item.active svg{color:#141414;}
       reactProb: 60
     },
     momentSeenTs: 0,
-    novel: { title: '', text: '', page: 0, total: 0, lastCommentAt: 0 },
     musicCfg: {
       enabled: true,
       inviteProb: 8,
@@ -2177,7 +2080,6 @@ body.theme-mono .tab-item.active svg{color:#141414;}
       contacts: contacts, activeId: state.activeId,
       letters: state.letters.slice(0, 50), letterCfg: state.letterCfg,
       moments: state.moments.slice(0, 50), momentCfg: state.momentCfg, momentSeenTs: state.momentSeenTs,
-      novel: state.novel,
       musicCfg: state.musicCfg,
       notifyOn: !!state.notifyOn,
       keepAlive: !!state.keepAlive,
@@ -2361,7 +2263,6 @@ body.theme-mono .tab-item.active svg{color:#141414;}
       state.momentCfg = Object.assign({}, state.momentCfg, d.momentCfg);
     }
     if (typeof d.momentSeenTs === 'number') state.momentSeenTs = d.momentSeenTs;
-    if (d.novel && typeof d.novel === 'object') state.novel = d.novel;
     if (d.musicCfg && typeof d.musicCfg === 'object') {
       state.musicCfg = Object.assign({}, state.musicCfg, d.musicCfg);
     }
@@ -2614,15 +2515,6 @@ body.theme-mono .tab-item.active svg{color:#141414;}
       switchProb: clampInt(mc.switchProb, 0, 100, 10)
     };
 
-    // 一起看小说
-    const nv = state.novel && typeof state.novel === 'object' ? state.novel : {};
-    state.novel = {
-      title: typeof nv.title === 'string' ? nv.title.slice(0, 80) : '',
-      text: typeof nv.text === 'string' ? nv.text : '',
-      page: clampInt(nv.page, 0, 999999, 0),
-      total: clampInt(nv.total, 0, 999999, 0),
-      lastCommentAt: typeof nv.lastCommentAt === 'number' ? nv.lastCommentAt : 0
-    };
   }
   function seedData() {
     Object.keys(SEED_GROUPS).forEach(g => {
@@ -4493,7 +4385,6 @@ body.theme-mono .tab-item.active svg{color:#141414;}
     $('music').classList.remove('show');
     $('letters').classList.remove('show');
     $('moments').classList.remove('show');
-    $('novel').classList.remove('show');
     if (page === 'lib') {
       openLib();
     } else if (page === 'set') {
@@ -5158,7 +5049,6 @@ body.theme-mono .tab-item.active svg{color:#141414;}
     contactsDrawer.classList.remove('show');
     Object.keys(PAGE_MAP).forEach(k => PAGE_MAP[k].classList.remove('show'));
     $('music').classList.remove('show');
-    $('novel').classList.remove('show');
     currentPage = 'chat';
     setTabActive('chat');
     updateIdentity(true);
@@ -5521,7 +5411,6 @@ body.theme-mono .tab-item.active svg{color:#141414;}
     $('more').classList.add('show');
     $('music').classList.remove('show');
     $('moments').classList.remove('show');
-    $('novel').classList.remove('show');
     currentPage = 'more';
     setTabActive('more');
     let changed = false;
@@ -5592,216 +5481,6 @@ body.theme-mono .tab-item.active svg{color:#141414;}
         return true;
       });
   }
-
-  /* ================= 一起看小说 ================= */
-  const NOVEL_MAX_CHARS = 1500000;
-  const NOVEL_PAGE_CHARS = 900;
-  const NOVEL_LINES = [
-    '我陪你看，慢慢来。',
-    '这一页写得好好。',
-    '看到这里，我也有点心动。',
-    '要不要先歇一会儿？',
-    '你翻，我就在旁边。',
-    '别着急，我陪你看完。',
-    '这里好戳我……',
-    '累了就靠一下。'
-  ];
-  let novelPages = [], novelPagesText = '';
-
-  function splitNovelText(text) {
-    const per = NOVEL_PAGE_CHARS;
-    const src = String(text || '').replace(/\r\n?/g, '\n').replace(/\u0000/g, '').trim();
-    if (!src) return [];
-    const paras = src.split(/\n+/).map(function (p) { return p.trim(); }).filter(Boolean);
-    const pages = [];
-    let cur = '';
-    function flush() { if (cur) { pages.push(cur); cur = ''; } }
-    paras.forEach(function (p) {
-      if (p.length > per) {
-        flush();
-        for (let i = 0; i < p.length; i += per) pages.push(p.slice(i, i + per));
-        return;
-      }
-      if (cur && cur.length + p.length + 2 > per) flush();
-      cur += (cur ? '\n\n' : '') + p;
-    });
-    flush();
-    return pages.length ? pages : [src];
-  }
-
-  function ensureNovelPages() {
-    const n = state.novel;
-    if (!n || !n.text) { novelPages = []; novelPagesText = ''; return; }
-    if (novelPagesText === n.text && novelPages.length) return;
-    novelPages = splitNovelText(n.text);
-    novelPagesText = n.text;
-  }
-
-  function updateNovelBadge() {
-    const b = $('moreNovelBadge');
-    if (!b) return;
-    if (!state.novel || !state.novel.text) { b.hidden = true; return; }
-    const total = state.novel.total || 0;
-    b.hidden = false;
-    if (!total) { b.textContent = '在读'; return; }
-    const p = Math.min(Math.max(0, state.novel.page || 0), total - 1);
-    b.textContent = Math.round(((p + 1) / total) * 100) + '%';
-  }
-
-  function setNovelCompanion(line) {
-    const el = $('novelCompanion');
-    if (!el) return;
-    if (!line) { el.textContent = 'TA 在你旁边陪你一起看'; return; }
-    const c = activeContact();
-    el.innerHTML = '<b>' + esc((c && c.name) || 'TA') + '：</b><span>' + esc(line) + '</span>';
-  }
-
-  function novelComment(force) {
-    const c = activeContact();
-    if (!c || !state.novel || !state.novel.text) return false;
-    const now = Date.now();
-    if (!force && state.novel.lastCommentAt && now - state.novel.lastCommentAt < 60000) return false;
-    let line = NOVEL_LINES[Math.floor(Math.random() * NOVEL_LINES.length)];
-    if (state.cards.length && Math.random() < 0.7) {
-      const card = pickCard(c);
-      if (card && card.text) line += ' ' + card.text;
-    }
-    state.novel.lastCommentAt = now;
-    pushMessageTo(c, 'char', 'text', line);
-    save();
-    setNovelCompanion(line);
-    return true;
-  }
-
-  function renderNovel() {
-    const n = state.novel;
-    const has = !!(n && String(n.text || '').trim());
-    const emptyEl = $('novelEmpty'), readerEl = $('novelReader');
-    if (emptyEl) emptyEl.hidden = has;
-    if (readerEl) readerEl.hidden = !has;
-    if (!has) {
-      setNovelCompanion('');
-      updateNovelBadge();
-      return;
-    }
-    ensureNovelPages();
-    const total = novelPages.length || 1;
-    const page = Math.min(Math.max(0, n.page || 0), total - 1);
-    if (page !== n.page) { n.page = page; save(); }
-    if (n.total !== total) { n.total = total; save(); }
-    $('novelTitle').textContent = n.title || '未命名小说';
-    $('novelText').textContent = novelPages[page] || '';
-    $('novelPageInfo').textContent = '第 ' + (page + 1) + ' / ' + total + ' 页';
-    $('novelProgress').textContent = Math.round(((page + 1) / total) * 100) + '%';
-    $('novelPrev').disabled = page <= 0;
-    $('novelNext').disabled = page >= total - 1;
-    updateNovelBadge();
-  }
-
-  function openNovel() {
-    $('more').classList.add('show');
-    $('music').classList.remove('show');
-    $('letters').classList.remove('show');
-    $('moments').classList.remove('show');
-    currentPage = 'more';
-    setTabActive('more');
-    renderNovel();
-    $('novel').classList.add('show');
-    if (state.novel.text && Date.now() - (state.novel.lastCommentAt || 0) > 600000) {
-      setTimeout(function () { novelComment(true); }, 350);
-    }
-  }
-
-  function goNovelPage(delta) {
-    if (!state.novel.text) return;
-    ensureNovelPages();
-    const total = novelPages.length;
-    const next = Math.min(Math.max(0, (state.novel.page || 0) + delta), total - 1);
-    if (next === state.novel.page) return;
-    state.novel.page = next;
-    save();
-    renderNovel();
-    const box = $('novelText');
-    if (box) box.scrollTop = 0;
-    if (Math.random() < 0.3) novelComment(false);
-  }
-
-  function setNovelText(title, text) {
-    let src = String(text || '').replace(/\u0000/g, '').trim();
-    if (!src) { toast('没有读到文字'); return false; }
-    if (src.length > NOVEL_MAX_CHARS) {
-      src = src.slice(0, NOVEL_MAX_CHARS);
-      toast('小说太长了，已保留前 150 万字');
-    }
-    state.novel = {
-      title: String(title || '').replace(/\.txt$/i, '').trim().slice(0, 80) || '未命名小说',
-      text: src,
-      page: 0,
-      total: 0,
-      lastCommentAt: 0
-    };
-    novelPages = [];
-    novelPagesText = '';
-    save();
-    renderNovel();
-    if (activeContact()) setTimeout(function () { novelComment(true); }, 400);
-    return true;
-  }
-
-  function importNovelFile(file) {
-    if (!file) return;
-    if (file.size > 8 * 1024 * 1024) { toast('文件太大啦，建议导入一章试试'); return; }
-    const fr = new FileReader();
-    fr.onload = function () {
-      let text = '';
-      try {
-        const buf = fr.result;
-        const utf8 = new TextDecoder('utf-8').decode(buf);
-        const bad = (utf8.match(/\uFFFD/g) || []).length;
-        if (bad > 3) {
-          try { text = new TextDecoder('gbk').decode(buf); } catch (e) { text = utf8; }
-        } else {
-          text = utf8;
-        }
-      } catch (e) {
-        text = String(fr.result || '');
-      }
-      const title = (file.name || '').replace(/\.txt$/i, '') || '未命名小说';
-      setNovelText(title, text);
-    };
-    fr.onerror = function () { toast('文件读取失败'); };
-    try { fr.readAsArrayBuffer(file); }
-    catch (e) { fr.readAsText(file, 'UTF-8'); }
-  }
-
-  function openNovelPaste() {
-    const n = state.novel || {};
-    openModal('粘贴小说',
-      '<label class="field"><span>标题</span><input id="nvPasteTitle" maxlength="80" placeholder="小说名字" value="' + esc(n.title || '') + '"></label>' +
-      '<label class="field"><span>小说内容</span><textarea id="nvPasteText" style="min-height:190px;" placeholder="把小说文字粘贴进来…"></textarea></label>' +
-      '<p class="hint">最多约 150 万字，建议一次导入一章；阅读进度会自动保存。</p>',
-      '开始看', function () {
-        const title = String(($('nvPasteTitle') && $('nvPasteTitle').value) || '').trim();
-        const text = String(($('nvPasteText') && $('nvPasteText').value) || '');
-        if (!text.trim()) { toast('先粘贴小说内容'); return false; }
-        setNovelText(title || '未命名小说', text);
-        return true;
-      });
-  }
-
-  $('moreNovelCard').addEventListener('click', openNovel);
-  $('btnCloseNovel').addEventListener('click', function () { $('novel').classList.remove('show'); });
-  $('btnNovelImport').addEventListener('click', function () { $('novelFileInput').click(); });
-  $('btnNovelImport2').addEventListener('click', function () { $('novelFileInput').click(); });
-  $('btnNovelPaste').addEventListener('click', openNovelPaste);
-  $('btnNovelPaste2').addEventListener('click', openNovelPaste);
-  $('novelPrev').addEventListener('click', function () { goNovelPage(-1); });
-  $('novelNext').addEventListener('click', function () { goNovelPage(1); });
-  $('novelFileInput').addEventListener('change', function (e) {
-    const f = e.target.files && e.target.files[0];
-    e.target.value = '';
-    importNovelFile(f);
-  });
 
   $('moreLetterCard').addEventListener('click', function () { openLetters(); });
   $('btnCloseLetters').addEventListener('click', function () { $('letters').classList.remove('show'); });
@@ -6072,7 +5751,6 @@ body.theme-mono .tab-item.active svg{color:#141414;}
     $('more').classList.add('show');
     $('music').classList.remove('show');
     $('letters').classList.remove('show');
-    $('novel').classList.remove('show');
     currentPage = 'more';
     setTabActive('more');
     state.momentSeenTs = Date.now();
@@ -6979,13 +6657,6 @@ body.theme-mono .tab-item.active svg{color:#141414;}
     // 问卷：每 2 秒检查一次是否到 30 秒作答时间
     processSurveyDue();
     setInterval(processSurveyDue, 2000);
-    updateNovelBadge();
-    // 看小说时，TA 偶尔在旁边说一句
-    setInterval(function () {
-      if (!$('novel').classList.contains('show') || !state.novel.text) return;
-      if (Date.now() - (state.novel.lastCommentAt || 0) < 180000) return;
-      if (Math.random() < 0.3) novelComment(false);
-    }, 60000);
     updateNotifyBtn();
     updateKeepAliveBtn();
     hideAppLoading();
