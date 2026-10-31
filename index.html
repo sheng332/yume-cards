@@ -115,7 +115,7 @@ input,textarea{font-family:inherit;}
 
 /* ===================== 顶栏（居中头像 + 磨砂玻璃） ===================== */
 .header{
-  display:grid;grid-template-columns:44px 1fr 44px;align-items:center;gap:8px;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;
   padding:10px 12px 12px;
   border-bottom:1px solid var(--line);
   background:var(--glass);
@@ -123,9 +123,6 @@ input,textarea{font-family:inherit;}
   backdrop-filter:blur(20px) saturate(1.6);
   flex:none;transition:background .3s;z-index:10;
 }
-.header-side{display:flex;align-items:center;justify-content:center;}
-.header-side.left{justify-content:flex-start;}
-.header-side.right{justify-content:flex-end;}
 .header-center{
   display:flex;flex-direction:column;align-items:center;gap:1px;
   min-width:0;text-align:center;
@@ -691,6 +688,7 @@ body.theme-mono .tab-item.active svg{color:#141414;}
 .more-card .mc-info b{font-size:14px;}
 .more-card .mc-info span{font-size:11.5px;color:var(--muted);}
 .badge-soon{font-size:10.5px;color:var(--muted);border:1px solid var(--line);border-radius:99px;padding:2px 8px;}
+.cap-badge{flex:none;font-size:10px;line-height:1;color:var(--accent);border:1px solid currentColor;border-radius:99px;padding:2px 6px;opacity:.8;}
 
 .ghost{
   width:100%;padding:11px;border-radius:11px;
@@ -784,20 +782,10 @@ body.theme-mono .tab-item.active svg{color:#141414;}
   </div>
 
   <header class="header">
-    <div class="header-side left">
-      <button class="icon-btn" id="btnHeaderCall" title="呼叫" aria-label="呼叫">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
-      </button>
-    </div>
     <div class="header-center">
       <div class="avatar" id="headAvatar">梦</div>
       <b class="head-name" id="headName">梦角</b>
       <span class="status"><i class="dot"></i>在线 · 字卡传讯</span>
-    </div>
-    <div class="header-side right">
-      <button class="icon-btn" id="btnHeaderMore" title="更多" aria-label="更多">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="12" r="1.7"/><circle cx="12" cy="12" r="1.7"/><circle cx="19" cy="12" r="1.7"/></svg>
-      </button>
     </div>
   </header>
 
@@ -1069,6 +1057,31 @@ body.theme-mono .tab-item.active svg{color:#141414;}
           <label class="field half"><span>最多拼几张</span><input type="number" id="setCombineMax" min="2" step="1" value="3"></label>
         </div>
         <p class="hint">连发多条消息将合并为一轮处理。接通概率用于你主动呼叫时。</p>
+
+        <div class="field" style="flex-direction:row;align-items:center;justify-content:space-between;gap:14px;">
+          <div style="display:flex;flex-direction:column;gap:3px;min-width:0;">
+            <span style="font-size:13px;color:var(--text);">允许梦角截取我的消息</span>
+            <span class="hint">开启后，系统会以固定概率（约 20%）把我发出的某句话悄悄收录成字卡。被截取的字卡可在字卡库查看、修改、删除或改分组。</span>
+          </div>
+          <button class="sw" id="swCapture" aria-label="允许梦角截取我的消息"></button>
+        </div>
+      </div>
+    </div>
+
+    <div class="set-group">
+      <div class="set-group-header"><span>数据与备份</span><span class="arrow">▼</span></div>
+      <div class="set-group-body">
+        <button class="ghost" id="btnExportData">导出完整备份</button>
+        <button class="ghost" id="btnImportData">导入完整备份</button>
+        <button class="ghost" id="btnClearChat">清空聊天记录</button>
+        <p class="hint">数据保存在本设备浏览器中，不会外传。请固定用同一个网址或同一个文件打开；换网址、换文件路径或清除浏览器数据都会读不到旧记录，建议定期导出备份。</p>
+      </div>
+    </div>
+
+    <div class="set-group">
+      <div class="set-group-header"><span>关于</span><span class="arrow">▼</span></div>
+      <div class="set-group-body">
+        <p class="hint">字卡传讯 · 与梦角的对话<br>版本 v9 · 单文件离线应用<br>所有聊天、字卡与外观设置均保存在你的浏览器本地。</p>
       </div>
     </div>
 
@@ -1092,23 +1105,7 @@ body.theme-mono .tab-item.active svg{color:#141414;}
       </div>
       <span class="badge-soon">敬请期待</span>
     </div>
-
-    <div class="set-group open">
-      <div class="set-group-header"><span>数据与备份</span><span class="arrow">▼</span></div>
-      <div class="set-group-body">
-        <button class="ghost" id="btnExportData">导出完整备份</button>
-        <button class="ghost" id="btnImportData">导入完整备份</button>
-        <button class="ghost" id="btnClearChat">清空聊天记录</button>
-        <p class="hint">数据保存在本设备浏览器中，不会外传。请固定用同一个网址或同一个文件打开；换网址、换文件路径或清除浏览器数据都会读不到旧记录，建议定期导出备份。</p>
-      </div>
-    </div>
-
-    <div class="set-group">
-      <div class="set-group-header"><span>关于</span><span class="arrow">▼</span></div>
-      <div class="set-group-body">
-        <p class="hint">字卡传讯 · 与梦角的对话<br>版本 v9 · 单文件离线应用<br>所有聊天、字卡与外观设置均保存在你的浏览器本地。</p>
-      </div>
-    </div>
+    <p class="hint" style="padding:6px 2px;">更多新功能会陆续放在这里。</p>
   </div>
 </aside>
 
@@ -1170,6 +1167,7 @@ body.theme-mono .tab-item.active svg{color:#141414;}
     combineProb: 0,
     combineMin: 2,
     combineMax: 3,
+    captureEnabled: true,
     groups: [],
     cards: [],
     stickers: [],
@@ -1240,6 +1238,7 @@ body.theme-mono .tab-item.active svg{color:#141414;}
       charProb: state.charProb, callProb: state.callProb,
       quoteProb: state.quoteProb, recallProb: state.recallProb, answerProb: state.answerProb,
       combineProb: state.combineProb, combineMin: state.combineMin, combineMax: state.combineMax,
+      captureEnabled: state.captureEnabled,
       groups: state.groups, cards: state.cards, stickers: state.stickers, chars: state.chars,
       messages: state.messages.slice(-400), lastId: state.lastId
     };
@@ -1345,6 +1344,7 @@ body.theme-mono .tab-item.active svg{color:#141414;}
     if (typeof d.combineProb === 'number') state.combineProb = d.combineProb;
     if (typeof d.combineMin === 'number') state.combineMin = d.combineMin;
     if (typeof d.combineMax === 'number') state.combineMax = d.combineMax;
+    if (typeof d.captureEnabled === 'boolean') state.captureEnabled = d.captureEnabled;
 
     if (Array.isArray(d.groups)) state.groups = d.groups;
     if (Array.isArray(d.cards)) state.cards = d.cards;
@@ -1390,6 +1390,7 @@ body.theme-mono .tab-item.active svg{color:#141414;}
     if (!Array.isArray(state.chatBgs)) state.chatBgs = [];
     if (!Array.isArray(state.callBgs)) state.callBgs = [];
     if (!Array.isArray(state.fonts)) state.fonts = [];
+    if (typeof state.captureEnabled !== 'boolean') state.captureEnabled = true;
     state.chatBgs = state.chatBgs.filter(b => b && typeof b.url === 'string');
     state.callBgs = state.callBgs.filter(b => b && typeof b.url === 'string');
     state.fonts = state.fonts.filter(f => f && typeof f.name === 'string');
@@ -1826,12 +1827,29 @@ body.theme-mono .tab-item.active svg{color:#141414;}
 
   function updateSendState() { btnSend.disabled = busy || !input.value.trim(); }
 
+  /* 梦角截取我的消息：概率由系统固定，不对外暴露 */
+  const CAPTURE_PROB = 20;
+  const CAPTURE_GROUP = '截取于你';
+  function maybeCaptureFromUser(text) {
+    if (!state.captureEnabled) return;
+    const t = String(text).trim();
+    if (t.length < 2 || t.length > 120) return;
+    if (state.cards.some(c => c.text.trim() === t)) return;
+    if (Math.random() * 100 >= CAPTURE_PROB) return;
+    ensureGroup(CAPTURE_GROUP);
+    state.cards.push({ id: uid(), text: t, group: CAPTURE_GROUP, off: false, source: 'capture', capturedAt: Date.now() });
+    save();
+    if (currentPage === 'lib' && ui.currentTab === 'text') renderTextLib();
+    toast('梦角悄悄把你这句话收进了字卡库');
+  }
+
   function handleUserSend() {
     const text = input.value.trim();
     if (!text) return;
     input.value = ''; resizeInput(); updateSendState();
     
     pushMessage('me', 'text', text, { quote: ui.replyTo });
+    maybeCaptureFromUser(text);
     
     ui.replyTo = null;
     $('replyPreview').classList.remove('show');
@@ -2170,6 +2188,7 @@ body.theme-mono .tab-item.active svg{color:#141414;}
           html += '<div class="card-row" data-id="' + c.id + '">';
           if (ui.manage) html += '<input type="checkbox" class="cb" ' + (ui.sel.has(c.id) ? 'checked' : '') + '>';
           html += '<span class="card-text ' + (c.off ? 'dim' : '') + '">' + esc(c.text) + '</span>';
+          if (c.source === 'capture') html += '<span class="cap-badge">截取</span>';
           html += '<button class="sw ' + (c.off ? 'off' : '') + '" data-sw="' + c.id + '"></button></div>';
        });
     }
@@ -2619,7 +2638,7 @@ body.theme-mono .tab-item.active svg{color:#141414;}
     if (page === 'lib') {
       openLib();
     } else if (page === 'set') {
-      updateIdentity(false); syncThemeButtons(); syncReplySettings();
+      updateIdentity(false); syncThemeButtons(); syncReplySettings(); syncCaptureSwitch();
       renderBgPicker('chat'); renderBgPicker('call'); syncAppearanceInputs();
       settings.classList.add('show');
     } else if (page === 'more') {
@@ -2634,8 +2653,6 @@ body.theme-mono .tab-item.active svg{color:#141414;}
   document.querySelectorAll('.tab-item').forEach(btn => {
     btn.addEventListener('click', () => switchPage(btn.dataset.page));
   });
-  $('btnHeaderMore').addEventListener('click', () => switchPage('more'));
-  $('btnHeaderCall').addEventListener('click', () => startCall('outgoing'));
   $('btnCloseLib').addEventListener('click', closeAll);
   $('btnCloseSet').addEventListener('click', closeAll);
   $('btnCloseMore').addEventListener('click', closeAll);
@@ -3011,6 +3028,17 @@ body.theme-mono .tab-item.active svg{color:#141414;}
     });
   });
 
+  /* 截取开关 */
+  function syncCaptureSwitch() {
+    $('swCapture').classList.toggle('off', !state.captureEnabled);
+  }
+  $('swCapture').addEventListener('click', function () {
+    state.captureEnabled = !state.captureEnabled;
+    syncCaptureSwitch();
+    save();
+    toast(state.captureEnabled ? '已允许梦角截取你的消息' : '已关闭截取，梦角不会再收录你的话');
+  });
+
   $('btnClearChat').addEventListener('click', () => {
     if (!confirm('确定清空所有聊天记录吗？此操作不可恢复。')) return;
     state.messages = [];
@@ -3125,7 +3153,7 @@ body.theme-mono .tab-item.active svg{color:#141414;}
       seedData();
       state.messages.push({
         id: uid(), role: 'char', type: 'text', 
-        content: '初次见面，我是梦角。底部导航里可以打开「字卡库」定制我的回复内容，也可以在「设置」里为我换个样子哦。\n\n如果发现刷新后数据丢失，请在「更多」里导出完整备份。', 
+        content: '初次见面，我是梦角。底部导航里可以打开「字卡库」定制我的回复内容，也可以在「设置」里为我换个样子哦。\n\n如果发现刷新后数据丢失，请在「设置 → 数据与备份」里导出完整备份。', 
         ts: Date.now()
       });
     }
@@ -3138,6 +3166,7 @@ body.theme-mono .tab-item.active svg{color:#141414;}
     updateIdentity(true);
     syncThemeButtons();
     syncReplySettings();
+    syncCaptureSwitch();
     applyAppearance();
     renderBgPicker('chat');
     renderBgPicker('call');
