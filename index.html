@@ -1508,7 +1508,14 @@ body.theme-mono .tab-item.active svg{color:#141414;}
           <label class="field half"><span>最少拼几张</span><input type="number" id="setCombineMin" min="2" step="1" value="2"></label>
           <label class="field half"><span>最多拼几张</span><input type="number" id="setCombineMax" min="2" step="1" value="3"></label>
         </div>
-        <p class="hint">连发多条消息将合并为一轮处理。接通概率用于你主动呼叫时。</p>
+        <div class="field-row">
+          <label class="field half"><span>主动发消息概率 (%)</span><input type="number" id="setProactiveProb" min="0" max="100" step="1" value="30"></label>
+          <label class="field half"><span>最短间隔 (分钟)</span><input type="number" id="setProactiveMin" min="1" max="720" step="1" value="15"></label>
+        </div>
+        <div class="field-row">
+          <label class="field half"><span>最长间隔 (分钟)</span><input type="number" id="setProactiveMax" min="1" max="720" step="1" value="60"></label>
+        </div>
+        <p class="hint">连发多条消息将合并为一轮处理：在 TA 发出字卡之前，你发多少条都只算一轮。主动发消息会在「最短~最长间隔」内随机到点，再按概率决定要不要主动发一条字卡；概率设为 0 即关闭。接通概率用于你主动呼叫时。</p>
 
         <div class="field" style="flex-direction:row;align-items:center;justify-content:space-between;gap:14px;">
           <div style="display:flex;flex-direction:column;gap:3px;min-width:0;">
@@ -1714,6 +1721,9 @@ body.theme-mono .tab-item.active svg{color:#141414;}
     combineProb: 0,
     combineMin: 2,
     combineMax: 3,
+    proactiveProb: 30,
+    proactiveMin: 15,
+    proactiveMax: 60,
     captureEnabled: true,
     soundEnabled: true,
     singleMode: false,
@@ -1932,6 +1942,7 @@ body.theme-mono .tab-item.active svg{color:#141414;}
       charProb: state.charProb, callProb: state.callProb,
       quoteProb: state.quoteProb, recallProb: state.recallProb, answerProb: state.answerProb,
       combineProb: state.combineProb, combineMin: state.combineMin, combineMax: state.combineMax,
+      proactiveProb: state.proactiveProb, proactiveMin: state.proactiveMin, proactiveMax: state.proactiveMax,
       captureEnabled: state.captureEnabled,
       soundEnabled: state.soundEnabled,
       singleMode: state.singleMode,
@@ -2098,6 +2109,9 @@ body.theme-mono .tab-item.active svg{color:#141414;}
     if (typeof d.combineProb === 'number') state.combineProb = d.combineProb;
     if (typeof d.combineMin === 'number') state.combineMin = d.combineMin;
     if (typeof d.combineMax === 'number') state.combineMax = d.combineMax;
+    if (typeof d.proactiveProb === 'number') state.proactiveProb = d.proactiveProb;
+    if (typeof d.proactiveMin === 'number') state.proactiveMin = d.proactiveMin;
+    if (typeof d.proactiveMax === 'number') state.proactiveMax = d.proactiveMax;
     if (typeof d.captureEnabled === 'boolean') state.captureEnabled = d.captureEnabled;
     if (typeof d.soundEnabled === 'boolean') state.soundEnabled = d.soundEnabled;
     if (typeof d.singleMode === 'boolean') state.singleMode = d.singleMode;
@@ -2362,6 +2376,10 @@ body.theme-mono .tab-item.active svg{color:#141414;}
     if (state.momentCfg.maxCards < state.momentCfg.minCards) {
       state.momentCfg.maxCards = state.momentCfg.minCards;
     }
+
+    state.proactiveProb = clampInt(state.proactiveProb, 0, 100, 30);
+    state.proactiveMin = clampInt(state.proactiveMin, 1, 720, 15);
+    state.proactiveMax = Math.max(state.proactiveMin, clampInt(state.proactiveMax, 1, 720, 60));
 
     // 一起听歌设置
     const mc = state.musicCfg && typeof state.musicCfg === 'object' ? state.musicCfg : {};
@@ -3040,12 +3058,16 @@ body.theme-mono .tab-item.active svg{color:#141414;}
   function queueReply() {
     const c = activeContact();
     if (!c) return;
-    if (c.busy) { c.pending = true; return; }
+    // TA 这一轮还没发出字卡时，我继续发的消息都并入同一轮，不再另起一轮
+    if (c.busy) {
+      if (c.roundSent) c.pending = true;
+      return;
+    }
     clearTimeout(c.replyTimer);
     c.replyDueAt = Date.now() + 1500;
     c.replyTimer = setTimeout(function () {
       c.replyDueAt = 0;
-      if (!c.busy) triggerReply(c); else c.pending = true;
+      if (!c.busy) triggerReply(c); else if (c.roundSent) c.pending = true;
     }, 1500);
   }
 
@@ -3068,6 +3090,7 @@ body.theme-mono .tab-item.active svg{color:#141414;}
     c.busy = true;
     c.pending = false;
     c.typing = false;
+    c.roundSent = false;
     updateSendState();
 
     // 正在和 TA 通话时，本轮不再生成新的来电/去电，避免覆盖进行中的通话
@@ -3088,7 +3111,7 @@ body.theme-mono .tab-item.active svg{color:#141414;}
     }
 
     // 一起听歌邀请：TA 偶尔会发一张一起听卡片过来
-    if (!calledThisTurn) maybeInviteMusic(c);
+    if (!calledThisTurn && maybeInviteMusic(c)) c.roundSent = true;
 
     const textPool = state.cards.filter(card => !card.off && !isGroupOff(card.group));
     const stickerPool = state.stickers;
@@ -3124,6 +3147,7 @@ body.theme-mono .tab-item.active svg{color:#141414;}
       if (sendSticker) {
         const emo = stickerPool[Math.floor(Math.random() * stickerPool.length)];
         const msg = pushMessageTo(c, 'char', 'emoji', emo.url);
+        c.roundSent = true;
         checkRecall(msg, textPool, c);
       } else if (textPool.length > 0) {
         let text = '';
@@ -3148,6 +3172,7 @@ body.theme-mono .tab-item.active svg{color:#141414;}
           }
 
           const msg = pushMessageTo(c, 'char', 'text', text, { quote: quoteObj });
+          c.roundSent = true;
           checkRecall(msg, textPool, c);
         }
       }
@@ -3157,6 +3182,57 @@ body.theme-mono .tab-item.active svg{color:#141414;}
     if (c === activeContact()) hideTyping();
     c.busy = false; updateSendState();
     if (c.pending) triggerReply(c);
+  }
+
+  /* 主动发消息：到点后按概率发一条字卡 */
+  function proactiveIntervalMs() {
+    const lo = Math.max(1, state.proactiveMin) * 60000;
+    const hi = Math.max(lo, state.proactiveMax * 60000);
+    return Math.round(lo + Math.random() * (hi - lo));
+  }
+  function proactiveTargets() {
+    if (state.singleMode) {
+      const c = activeContact();
+      return c ? [c] : [];
+    }
+    return state.contacts.slice();
+  }
+  function initProactiveSchedule() {
+    proactiveTargets().forEach(function (c) {
+      if (typeof c.proactiveAt === 'number' && isFinite(c.proactiveAt)) return;
+      c.proactiveAt = Date.now() + proactiveIntervalMs();
+    });
+  }
+  function sendProactiveMessage(c) {
+    if (!c) return false;
+    const pool = state.cards.filter(function (x) {
+      return x && !x.off && !isGroupOff(x.group) && typeof x.text === 'string' && x.text.trim();
+    });
+    if (!pool.length) return false;
+    let text = '';
+    if (Math.random() * 100 < state.combineProb) text = buildCombinedText();
+    if (!text) {
+      const card = pickCard(c);
+      text = card ? card.text : '';
+    }
+    if (!text) return false;
+    if (state.chars.length && Math.random() * 100 < state.charProb) {
+      text += state.chars[Math.floor(Math.random() * state.chars.length)];
+    }
+    pushMessageTo(c, 'char', 'text', text);
+    return true;
+  }
+  function checkProactiveDue() {
+    if (!state.proactiveProb) return;
+    initProactiveSchedule();
+    const now = Date.now();
+    proactiveTargets().forEach(function (c) {
+      if (!c || typeof c.proactiveAt !== 'number' || now < c.proactiveAt) return;
+      c.proactiveAt = now + proactiveIntervalMs();
+      if (c.busy || c.replyDueAt || c.pending) return;
+      if (Math.random() * 100 >= state.proactiveProb) return;
+      sendProactiveMessage(c);
+    });
   }
 
   async function checkRecall(msg, textPool, contact) {
@@ -5989,6 +6065,9 @@ body.theme-mono .tab-item.active svg{color:#141414;}
     $('setAnswerProb').value = state.answerProb;
     $('setCombineMin').value = state.combineMin;
     $('setCombineMax').value = state.combineMax;
+    $('setProactiveProb').value = state.proactiveProb;
+    $('setProactiveMin').value = state.proactiveMin;
+    $('setProactiveMax').value = state.proactiveMax;
   }
 
   const replyInputs = [
@@ -6005,7 +6084,10 @@ body.theme-mono .tab-item.active svg{color:#141414;}
     { id: 'setCombineProb', key: 'combineProb' },
     { id: 'setAnswerProb', key: 'answerProb' },
     { id: 'setCombineMin', key: 'combineMin' },
-    { id: 'setCombineMax', key: 'combineMax' }
+    { id: 'setCombineMax', key: 'combineMax' },
+    { id: 'setProactiveProb', key: 'proactiveProb' },
+    { id: 'setProactiveMin', key: 'proactiveMin' },
+    { id: 'setProactiveMax', key: 'proactiveMax' }
   ];
 
   replyInputs.forEach(item => {
@@ -6021,6 +6103,12 @@ body.theme-mono .tab-item.active svg{color:#141414;}
       if (state.minDelay > state.maxDelay) state.maxDelay = state.minDelay;
       if (state.minReply > state.maxReply) state.maxReply = state.minReply;
       if (state.combineMin > state.combineMax) state.combineMax = state.combineMin;
+      if (state.proactiveMin > state.proactiveMax) state.proactiveMax = state.proactiveMin;
+      if (state.proactiveProb > 100) state.proactiveProb = 100;
+      if (item.key.indexOf('proactive') === 0) {
+        state.contacts.forEach(function (c) { c.proactiveAt = 0; });
+        initProactiveSchedule();
+      }
       
       syncReplySettings();
       save();
@@ -6250,6 +6338,10 @@ body.theme-mono .tab-item.active svg{color:#141414;}
     setTimeout(checkMomentDue, 1500);
     setInterval(checkMomentDue, 60000);
     setInterval(processMomentPending, 15000);
+    // 主动发消息：每 30 秒检查一次是否到点
+    initProactiveSchedule();
+    setTimeout(checkProactiveDue, 2000);
+    setInterval(checkProactiveDue, 30000);
     updateNotifyBtn();
     updateKeepAliveBtn();
 
@@ -6300,6 +6392,7 @@ body.theme-mono .tab-item.active svg{color:#141414;}
     checkLetterDue();
     checkMomentDue();
     processMomentPending();
+    checkProactiveDue();
     state.contacts.forEach(function (c) {
       if (!c || c.busy || !c.replyDueAt) return;
       if (Date.now() >= c.replyDueAt) {
