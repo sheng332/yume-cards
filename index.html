@@ -686,10 +686,42 @@ body.theme-mono .tab-item.active svg{color:#141414;}
   cursor:pointer;transition:border-color .2s;
 }
 .more-card:hover{border-color:var(--accent);}
-.listen-box{display:flex;flex-direction:column;gap:8px;}
-.listen-box iframe{width:100%;height:86px;border:0;border-radius:12px;background:var(--panel-bg);}
-.listen-meta{display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
-.listen-meta a.chip{text-decoration:none;}
+
+/* 一起听歌 */
+.player-card{
+  display:flex;align-items:center;gap:12px;padding:14px;border-radius:14px;
+  background:var(--panel-bg);border:1px solid var(--line);
+}
+.player-cover{
+  width:64px;height:64px;border-radius:12px;flex:none;overflow:hidden;
+  display:grid;place-items:center;font-size:22px;color:#fff;
+  background:linear-gradient(135deg,#ff9ecb,#a77bff);
+  background-size:cover;background-position:center;
+}
+.player-main{flex:1;min-width:0;display:flex;flex-direction:column;gap:4px;}
+.player-main b{font-size:14.5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.player-main span{font-size:11.5px;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.player-bar{height:4px;border-radius:99px;background:var(--line);margin-top:4px;overflow:hidden;cursor:pointer;}
+.player-fill{height:100%;width:0;background:var(--accent);border-radius:99px;transition:width .1s linear;}
+.player-time{font-size:10.5px;color:var(--muted);}
+.player-play{
+  flex:none;width:46px;height:46px;border-radius:50%;border:none;
+  background:var(--accent);color:var(--accent-contrast);font-size:15px;cursor:pointer;
+}
+.song-list{display:flex;flex-direction:column;gap:6px;}
+.song-row{
+  display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:10px;
+  border:1px solid var(--line);background:var(--panel-bg);cursor:pointer;transition:border-color .2s;
+}
+.song-row.active{border-color:var(--accent);}
+.song-row img, .song-thumb{
+  width:38px;height:38px;border-radius:8px;flex:none;object-fit:cover;
+  background:var(--app-bg);display:grid;place-items:center;font-size:16px;color:var(--muted);
+}
+.song-meta{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px;}
+.song-meta b{font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.song-meta span{font-size:11px;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.song-del{flex:none;background:transparent;border:none;color:var(--muted);font-size:14px;cursor:pointer;padding:4px;}
 .more-card .mc-icon{
   width:40px;height:40px;border-radius:11px;background:var(--app-bg);border:1px solid var(--line);
   display:grid;place-items:center;flex:none;
@@ -1116,12 +1148,43 @@ body.theme-mono .tab-item.active svg{color:#141414;}
       </div>
       <div class="mc-info">
         <b>一起听歌</b>
-        <span>导入网易云分享链接，和梦角共享一段音乐时光</span>
+        <span>点进去导入网易云链接，管理你的歌单</span>
       </div>
       <span class="badge-soon">打开</span>
     </div>
-    <div class="listen-box" id="listenBox"></div>
     <p class="hint" style="padding:6px 2px;">更多新功能会陆续放在这里。</p>
+  </div>
+</aside>
+
+<!-- ============ 一起听歌 ============ -->
+<aside class="drawer" id="music">
+  <div class="drawer-head">
+    <h2>一起听歌</h2>
+    <button class="icon-btn" id="btnCloseMusic">✕</button>
+  </div>
+  <div class="drawer-scroll">
+    <div class="player-card">
+      <div class="player-cover" id="playerCover">♪</div>
+      <div class="player-main">
+        <b id="playerTitle">还没有播放的歌曲</b>
+        <span id="playerArtist">导入网易云链接后点歌播放</span>
+        <div class="player-bar" id="playerBar"><div class="player-fill" id="playerFill"></div></div>
+        <div class="player-time" id="playerTime">00:00 / 00:00</div>
+      </div>
+      <button class="player-play" id="btnPlay">▶</button>
+    </div>
+
+    <div class="field">
+      <span>批量导入（每行一个链接或歌曲 id）</span>
+      <textarea class="custom-ta" id="musicLinks" placeholder="https://y.music.163.com/m/song?id=...&#10;一行一个，可一次导入多首"></textarea>
+      <div class="lib-actions" style="margin:8px 0 0;"><button class="chip" id="btnImportSongs">导入歌单</button></div>
+      <p class="hint">会自动读取歌名、歌手和封面；版权受限或需要付费的歌曲可能无法播放。</p>
+    </div>
+
+    <div class="field">
+      <span>歌单</span>
+      <div class="song-list" id="songList"></div>
+    </div>
   </div>
 </aside>
 
@@ -1190,7 +1253,8 @@ body.theme-mono .tab-item.active svg{color:#141414;}
     chars: [],
     messages: [],
     lastId: null,
-    songId: ''
+    songs: [],
+    songIdx: -1
   };
 
   const ui = {
@@ -1258,7 +1322,8 @@ body.theme-mono .tab-item.active svg{color:#141414;}
       captureEnabled: state.captureEnabled,
       groups: state.groups, cards: state.cards, stickers: state.stickers, chars: state.chars,
       messages: state.messages.slice(-400), lastId: state.lastId,
-      songId: state.songId
+      songs: state.songs.map(function (s) { return { id: s.id, name: s.name, artist: s.artist, cover: s.cover, url: s.url || '' }; }),
+      songIdx: state.songIdx
     };
   }
 
@@ -1370,7 +1435,10 @@ body.theme-mono .tab-item.active svg{color:#141414;}
     if (Array.isArray(d.chars)) state.chars = d.chars;
     if (Array.isArray(d.messages)) state.messages = d.messages;
     if (typeof d.lastId === 'string') state.lastId = d.lastId;
-    if (typeof d.songId === 'string') state.songId = d.songId;
+    if (Array.isArray(d.songs)) state.songs = d.songs.filter(function (s) { return s && s.id; }).map(function (s) {
+      return { id: String(s.id), name: String(s.name || ('歌曲 ' + s.id)), artist: String(s.artist || '未知歌手'), cover: String(s.cover || ''), url: String(s.url || '') };
+    });
+    if (typeof d.songIdx === 'number') state.songIdx = d.songIdx;
     return true;
   }
 
@@ -1410,7 +1478,10 @@ body.theme-mono .tab-item.active svg{color:#141414;}
     if (!Array.isArray(state.callBgs)) state.callBgs = [];
     if (!Array.isArray(state.fonts)) state.fonts = [];
     if (typeof state.captureEnabled !== 'boolean') state.captureEnabled = true;
-    if (typeof state.songId !== 'string') state.songId = '';
+    if (!Array.isArray(state.songs)) state.songs = [];
+    if (typeof state.songIdx !== 'number') state.songIdx = -1;
+    if (state.songIdx >= state.songs.length) state.songIdx = state.songs.length - 1;
+    if (state.songIdx < -1) state.songIdx = -1;
     state.chatBgs = state.chatBgs.filter(b => b && typeof b.url === 'string');
     state.callBgs = state.callBgs.filter(b => b && typeof b.url === 'string');
     state.fonts = state.fonts.filter(f => f && typeof f.name === 'string');
@@ -2661,6 +2732,7 @@ body.theme-mono .tab-item.active svg{color:#141414;}
 
   function switchPage(page) {
     Object.keys(PAGE_MAP).forEach(k => PAGE_MAP[k].classList.remove('show'));
+    $('music').classList.remove('show');
     if (page === 'lib') {
       openLib();
     } else if (page === 'set') {
@@ -2668,7 +2740,6 @@ body.theme-mono .tab-item.active svg{color:#141414;}
       renderBgPicker('chat'); renderBgPicker('call'); syncAppearanceInputs();
       settings.classList.add('show');
     } else if (page === 'more') {
-      renderListen();
       morePage.classList.add('show');
     }
     currentPage = page;
@@ -2686,43 +2757,216 @@ body.theme-mono .tab-item.active svg{color:#141414;}
   document.addEventListener('keydown', function (e) { if (e.key === 'Escape') closeAll(); });
 
   /* 一起听歌 */
-  function renderListen() {
-    const box = $('listenBox');
-    if (!box) return;
-    if (!state.songId) {
-      box.innerHTML = '<p class="hint">还没有歌曲，点上面的「一起听歌」粘贴网易云分享链接即可。</p>';
+  const MUSIC_API = 'https://api.vkeys.cn/v2/music/netease?id=';
+  const musicPage = $('music');
+  const audio = document.createElement('audio');
+  audio.preload = 'metadata';
+  let musicPlaying = false;
+
+  function fmtTime(sec) {
+    sec = Math.max(0, Math.floor(sec || 0));
+    return String(Math.floor(sec / 60)).padStart(2, '0') + ':' + String(sec % 60).padStart(2, '0');
+  }
+
+  function normHttp(url) { return typeof url === 'string' ? url.replace(/^http:/, 'https:') : ''; }
+
+  function parseSongIds(text) {
+    const ids = [];
+    String(text).split(/[\s,，]+/).forEach(function (t) {
+      if (!t) return;
+      const m = t.match(/[?&#]id=(\d{3,})/) || t.match(/\/song\/(\d{3,})/) || t.match(/^(\d{3,})$/);
+      if (m && ids.indexOf(m[1]) < 0) ids.push(m[1]);
+    });
+    return ids;
+  }
+
+  async function fetchJson(url) {
+    const ctl = new AbortController();
+    const timer = setTimeout(function () { ctl.abort(); }, 8000);
+    try {
+      const r = await fetch(url, { signal: ctl.signal });
+      if (!r.ok) throw new Error('bad');
+      return await r.json();
+    } finally { clearTimeout(timer); }
+  }
+
+  async function fetchSongMeta(id) {
+    const metaUrl = 'https://api.injahow.cn/meting/?type=song&id=' + encodeURIComponent(id);
+    try {
+      const j = await fetchJson(metaUrl);
+      const d = Array.isArray(j) ? j[0] : null;
+      if (d && d.name) {
+        return {
+          id: String(id),
+          name: d.name,
+          artist: d.artist || '未知歌手',
+          cover: normHttp(d.pic),
+          url: normHttp(d.url) || metaUrl
+        };
+      }
+    } catch (e) {}
+    try {
+      const j = await fetchJson(MUSIC_API + encodeURIComponent(id));
+      const d = j && j.data;
+      if (d && d.song) {
+        return {
+          id: String(id),
+          name: d.song,
+          artist: d.singer || '未知歌手',
+          cover: normHttp(d.cover),
+          url: normHttp(d.url)
+        };
+      }
+    } catch (e) {}
+    return {
+      id: String(id), name: '歌曲 ' + id, artist: '未知歌手', cover: '',
+      url: 'https://api.injahow.cn/meting/?server=netease&type=url&id=' + encodeURIComponent(id)
+    };
+  }
+
+  function currentSong() {
+    return state.songIdx >= 0 && state.songIdx < state.songs.length ? state.songs[state.songIdx] : null;
+  }
+
+  function updatePlayerUI() {
+    const s = currentSong();
+    $('playerTitle').textContent = s ? s.name : '还没有播放的歌曲';
+    $('playerArtist').textContent = s ? s.artist : '导入网易云链接后点歌播放';
+    const cover = $('playerCover');
+    if (s && s.cover) {
+      cover.style.backgroundImage = 'url("' + s.cover + '")';
+      cover.textContent = '';
+    } else {
+      cover.style.backgroundImage = '';
+      cover.textContent = '♪';
+    }
+    $('btnPlay').textContent = musicPlaying && s ? '❚❚' : '▶';
+    if (!s) {
+      $('playerFill').style.width = '0%';
+      $('playerTime').textContent = '00:00 / 00:00';
+    }
+  }
+
+  function renderSongList() {
+    const list = $('songList');
+    if (!state.songs.length) {
+      list.innerHTML = '<p class="hint">歌单还是空的，先粘贴网易云分享链接导入吧。</p>';
       return;
     }
-    const id = encodeURIComponent(state.songId);
-    box.innerHTML =
-      '<iframe src="https://music.163.com/outchain/player?type=2&id=' + id + '&auto=0&height=86" loading="lazy" allow="autoplay; encrypted-media"></iframe>' +
-      '<div class="listen-meta">' +
-        '<a class="chip" href="https://music.163.com/song?id=' + id + '" target="_blank" rel="noopener">在网易云打开</a>' +
-        '<button class="chip" id="btnChangeSong">更换歌曲</button>' +
-        '<button class="chip" id="btnRemoveSong">移除歌曲</button>' +
+    list.innerHTML = state.songs.map(function (s, i) {
+      const cover = s.cover
+        ? '<img src="' + esc(s.cover) + '" alt="" loading="lazy">'
+        : '<div class="song-thumb">♪</div>';
+      return '<div class="song-row' + (i === state.songIdx ? ' active' : '') + '" data-si="' + i + '">' +
+        cover +
+        '<div class="song-meta"><b>' + esc(s.name) + '</b><span>' + esc(s.artist) + '</span></div>' +
+        '<button class="song-del" data-del="' + i + '" aria-label="删除">✕</button>' +
       '</div>';
-    $('btnChangeSong').addEventListener('click', openListenModal);
-    $('btnRemoveSong').addEventListener('click', function () {
-      state.songId = ''; save(); renderListen(); toast('已移除歌曲');
-    });
+    }).join('');
   }
 
-  function openListenModal() {
-    openModal('一起听歌',
-      '<div class="field"><span>粘贴网易云歌曲分享链接</span>' +
-      '<input type="text" id="listenLink" placeholder="https://y.music.163.com/m/song?id=2693006707"></div>' +
-      '<p class="hint">支持 music.163.com / y.music.163.com 的歌曲链接，会自动识别歌曲 id；版权受限的歌曲可能无法播放。</p>',
-      '播放',
-      function () {
-        const v = ($('listenLink').value || '').trim();
-        const m = v.match(/[?&#]id=(\d{3,})/) || v.match(/\/song\/(\d{3,})/);
-        if (!m) { toast('没认出歌曲 id，请粘贴完整的分享链接'); return false; }
-        state.songId = m[1];
-        save(); renderListen(); toast('已加入一起听歌');
+  async function playSong(idx) {
+    const s = state.songs[idx];
+    if (!s) return;
+    state.songIdx = idx;
+    save(); renderSongList(); updatePlayerUI();
+    const meta = await fetchSongMeta(s.id);
+    if (meta.url) s.url = meta.url;
+    if (meta.name && meta.name !== '歌曲 ' + s.id) s.name = meta.name;
+    if (meta.artist) s.artist = meta.artist;
+    if (meta.cover) s.cover = meta.cover;
+    save(); renderSongList(); updatePlayerUI();
+    audio.src = s.url || ('https://api.injahow.cn/meting/?server=netease&type=url&id=' + encodeURIComponent(s.id));
+    musicPlaying = true;
+    try {
+      const p = audio.play();
+      if (p && p.catch) p.catch(function () {
+        musicPlaying = false; updatePlayerUI(); toast('播放失败，可能是版权限制');
       });
+    } catch (e) { musicPlaying = false; }
+    updatePlayerUI();
   }
 
-  $('moreListenCard').addEventListener('click', openListenModal);
+  function togglePlay() {
+    if (!currentSong()) {
+      if (state.songs.length) playSong(0);
+      else toast('歌单还是空的，先导入歌曲吧');
+      return;
+    }
+    if (audio.paused) {
+      try {
+        const p = audio.play();
+        if (p && p.catch) p.catch(function () {});
+      } catch (e) {}
+      musicPlaying = true;
+    } else {
+      audio.pause(); musicPlaying = false;
+    }
+    updatePlayerUI();
+  }
+
+  async function importSongs() {
+    const ids = parseSongIds($('musicLinks').value);
+    if (!ids.length) { toast('没认出链接，请粘贴完整的网易云分享链接'); return; }
+    const exist = {};
+    state.songs.forEach(function (s) { exist[s.id] = 1; });
+    const fresh = ids.filter(function (id) { return !exist[id]; });
+    if (!fresh.length) { toast('这些歌曲已经在歌单里了'); return; }
+    const btn = $('btnImportSongs');
+    btn.disabled = true;
+    for (let i = 0; i < fresh.length; i++) {
+      btn.textContent = '读取中 ' + (i + 1) + '/' + fresh.length;
+      state.songs.push(await fetchSongMeta(fresh[i]));
+    }
+    btn.disabled = false; btn.textContent = '导入歌单';
+    $('musicLinks').value = '';
+    save(); renderSongList();
+    toast('已导入 ' + fresh.length + ' 首歌曲');
+  }
+
+  function openMusic() {
+    renderSongList(); updatePlayerUI();
+    musicPage.classList.add('show');
+  }
+
+  audio.addEventListener('timeupdate', function () {
+    const d = audio.duration || 0, c = audio.currentTime || 0;
+    $('playerFill').style.width = d ? (c / d * 100) + '%' : '0%';
+    $('playerTime').textContent = fmtTime(c) + ' / ' + fmtTime(d);
+  });
+  audio.addEventListener('ended', function () {
+    if (state.songs.length > 1) playSong((state.songIdx + 1) % state.songs.length);
+    else { musicPlaying = false; updatePlayerUI(); }
+  });
+
+  $('moreListenCard').addEventListener('click', openMusic);
+  $('btnCloseMusic').addEventListener('click', function () { musicPage.classList.remove('show'); });
+  $('btnPlay').addEventListener('click', togglePlay);
+  $('btnImportSongs').addEventListener('click', importSongs);
+  $('playerBar').addEventListener('click', function (e) {
+    const d = audio.duration;
+    if (!d) return;
+    const rect = this.getBoundingClientRect();
+    if (!rect.width) return;
+    audio.currentTime = Math.max(0, Math.min(d, (e.clientX - rect.left) / rect.width * d));
+  });
+  $('songList').addEventListener('click', function (e) {
+    const del = e.target.closest('[data-del]');
+    if (del) {
+      e.stopPropagation();
+      const i = Number(del.dataset.del);
+      const wasCurrent = i === state.songIdx;
+      state.songs.splice(i, 1);
+      if (wasCurrent) {
+        audio.pause(); musicPlaying = false; state.songIdx = -1;
+      } else if (i < state.songIdx) state.songIdx--;
+      save(); renderSongList(); updatePlayerUI();
+      toast('已移除歌曲');
+      return;
+    }
+    const row = e.target.closest('[data-si]');
+    if (row) playSong(Number(row.dataset.si));
+  });
 
 
   /* 设置 */
@@ -3239,7 +3483,6 @@ body.theme-mono .tab-item.active svg{color:#141414;}
     renderBgPicker('call');
     syncAppearanceInputs();
     applyFont();
-    renderListen();
     
     state.messages.forEach(m => {
        chatEl.appendChild(buildMessage(m));
