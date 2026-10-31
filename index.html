@@ -683,7 +683,13 @@ body.theme-mono .tab-item.active svg{color:#141414;}
 .more-card{
   display:flex;align-items:center;gap:12px;padding:14px;border-radius:12px;
   background:var(--panel-bg);border:1px solid var(--line);
+  cursor:pointer;transition:border-color .2s;
 }
+.more-card:hover{border-color:var(--accent);}
+.listen-box{display:flex;flex-direction:column;gap:8px;}
+.listen-box iframe{width:100%;height:86px;border:0;border-radius:12px;background:var(--panel-bg);}
+.listen-meta{display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
+.listen-meta a.chip{text-decoration:none;}
 .more-card .mc-icon{
   width:40px;height:40px;border-radius:11px;background:var(--app-bg);border:1px solid var(--line);
   display:grid;place-items:center;flex:none;
@@ -1104,16 +1110,17 @@ body.theme-mono .tab-item.active svg{color:#141414;}
     <button class="icon-btn" id="btnCloseMore">✕</button>
   </div>
   <div class="drawer-scroll">
-    <div class="more-card">
+    <div class="more-card" id="moreListenCard" role="button" tabindex="0">
       <div class="mc-icon">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>
       </div>
       <div class="mc-info">
         <b>一起听歌</b>
-        <span>和梦角共享一段音乐时光</span>
+        <span>导入网易云分享链接，和梦角共享一段音乐时光</span>
       </div>
-      <span class="badge-soon">敬请期待</span>
+      <span class="badge-soon">打开</span>
     </div>
+    <div class="listen-box" id="listenBox"></div>
     <p class="hint" style="padding:6px 2px;">更多新功能会陆续放在这里。</p>
   </div>
 </aside>
@@ -1182,7 +1189,8 @@ body.theme-mono .tab-item.active svg{color:#141414;}
     stickers: [],
     chars: [],
     messages: [],
-    lastId: null
+    lastId: null,
+    songId: ''
   };
 
   const ui = {
@@ -1249,7 +1257,8 @@ body.theme-mono .tab-item.active svg{color:#141414;}
       combineProb: state.combineProb, combineMin: state.combineMin, combineMax: state.combineMax,
       captureEnabled: state.captureEnabled,
       groups: state.groups, cards: state.cards, stickers: state.stickers, chars: state.chars,
-      messages: state.messages.slice(-400), lastId: state.lastId
+      messages: state.messages.slice(-400), lastId: state.lastId,
+      songId: state.songId
     };
   }
 
@@ -1361,6 +1370,7 @@ body.theme-mono .tab-item.active svg{color:#141414;}
     if (Array.isArray(d.chars)) state.chars = d.chars;
     if (Array.isArray(d.messages)) state.messages = d.messages;
     if (typeof d.lastId === 'string') state.lastId = d.lastId;
+    if (typeof d.songId === 'string') state.songId = d.songId;
     return true;
   }
 
@@ -1400,6 +1410,7 @@ body.theme-mono .tab-item.active svg{color:#141414;}
     if (!Array.isArray(state.callBgs)) state.callBgs = [];
     if (!Array.isArray(state.fonts)) state.fonts = [];
     if (typeof state.captureEnabled !== 'boolean') state.captureEnabled = true;
+    if (typeof state.songId !== 'string') state.songId = '';
     state.chatBgs = state.chatBgs.filter(b => b && typeof b.url === 'string');
     state.callBgs = state.callBgs.filter(b => b && typeof b.url === 'string');
     state.fonts = state.fonts.filter(f => f && typeof f.name === 'string');
@@ -2657,6 +2668,7 @@ body.theme-mono .tab-item.active svg{color:#141414;}
       renderBgPicker('chat'); renderBgPicker('call'); syncAppearanceInputs();
       settings.classList.add('show');
     } else if (page === 'more') {
+      renderListen();
       morePage.classList.add('show');
     }
     currentPage = page;
@@ -2672,6 +2684,46 @@ body.theme-mono .tab-item.active svg{color:#141414;}
   $('btnCloseSet').addEventListener('click', closeAll);
   $('btnCloseMore').addEventListener('click', closeAll);
   document.addEventListener('keydown', function (e) { if (e.key === 'Escape') closeAll(); });
+
+  /* 一起听歌 */
+  function renderListen() {
+    const box = $('listenBox');
+    if (!box) return;
+    if (!state.songId) {
+      box.innerHTML = '<p class="hint">还没有歌曲，点上面的「一起听歌」粘贴网易云分享链接即可。</p>';
+      return;
+    }
+    const id = encodeURIComponent(state.songId);
+    box.innerHTML =
+      '<iframe src="https://music.163.com/outchain/player?type=2&id=' + id + '&auto=0&height=86" loading="lazy" allow="autoplay; encrypted-media"></iframe>' +
+      '<div class="listen-meta">' +
+        '<a class="chip" href="https://music.163.com/song?id=' + id + '" target="_blank" rel="noopener">在网易云打开</a>' +
+        '<button class="chip" id="btnChangeSong">更换歌曲</button>' +
+        '<button class="chip" id="btnRemoveSong">移除歌曲</button>' +
+      '</div>';
+    $('btnChangeSong').addEventListener('click', openListenModal);
+    $('btnRemoveSong').addEventListener('click', function () {
+      state.songId = ''; save(); renderListen(); toast('已移除歌曲');
+    });
+  }
+
+  function openListenModal() {
+    openModal('一起听歌',
+      '<div class="field"><span>粘贴网易云歌曲分享链接</span>' +
+      '<input type="text" id="listenLink" placeholder="https://y.music.163.com/m/song?id=2693006707"></div>' +
+      '<p class="hint">支持 music.163.com / y.music.163.com 的歌曲链接，会自动识别歌曲 id；版权受限的歌曲可能无法播放。</p>',
+      '播放',
+      function () {
+        const v = ($('listenLink').value || '').trim();
+        const m = v.match(/[?&#]id=(\d{3,})/) || v.match(/\/song\/(\d{3,})/);
+        if (!m) { toast('没认出歌曲 id，请粘贴完整的分享链接'); return false; }
+        state.songId = m[1];
+        save(); renderListen(); toast('已加入一起听歌');
+      });
+  }
+
+  $('moreListenCard').addEventListener('click', openListenModal);
+
 
   /* 设置 */
   $('setUserName').addEventListener('input', function (e) {
@@ -3187,6 +3239,7 @@ body.theme-mono .tab-item.active svg{color:#141414;}
     renderBgPicker('call');
     syncAppearanceInputs();
     applyFont();
+    renderListen();
     
     state.messages.forEach(m => {
        chatEl.appendChild(buildMessage(m));
