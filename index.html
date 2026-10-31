@@ -2014,6 +2014,7 @@ body.theme-night .glyph-music{background:linear-gradient(160deg,#4a2338,#3a1b2c)
     avatar: '',
     userAvatar: '',
     homeAvatar: '',
+    homeName: '',
     homeSig: '',
     theme: 'imessage',
     chatBgs: [],
@@ -2283,7 +2284,7 @@ body.theme-night .glyph-music{background:linear-gradient(160deg,#4a2338,#3a1b2c)
       savedAt: Date.now(),
       userName: state.userName, charName: state.charName,
       avatar: state.avatar, userAvatar: state.userAvatar,
-      homeAvatar: state.homeAvatar || '', homeSig: state.homeSig || '', theme: state.theme,
+      homeAvatar: state.homeAvatar || '', homeName: state.homeName || '', homeSig: state.homeSig || '', theme: state.theme,
       chatBgs: state.chatBgs, callBgs: state.callBgs,
       chatBgId: state.chatBgId, callBgId: state.callBgId,
       bubbleCss: state.bubbleCss, bubblePresets: state.bubblePresets, bubbleId: state.bubbleId,
@@ -2438,6 +2439,7 @@ body.theme-night .glyph-music{background:linear-gradient(160deg,#4a2338,#3a1b2c)
     if (typeof d.avatar === 'string') state.avatar = d.avatar;
     if (typeof d.userAvatar === 'string') state.userAvatar = d.userAvatar;
     if (typeof d.homeAvatar === 'string') state.homeAvatar = d.homeAvatar;
+    if (typeof d.homeName === 'string') state.homeName = d.homeName;
     if (typeof d.homeSig === 'string') state.homeSig = d.homeSig;
     if (typeof d.theme === 'string') state.theme = d.theme;
     if (Array.isArray(d.chatBgs)) state.chatBgs = d.chatBgs;
@@ -2533,6 +2535,7 @@ body.theme-night .glyph-music{background:linear-gradient(160deg,#4a2338,#3a1b2c)
   }
   function normalize() {
     if (typeof state.homeAvatar !== 'string') state.homeAvatar = '';
+    if (typeof state.homeName !== 'string') state.homeName = '';
     if (typeof state.homeSig !== 'string') state.homeSig = '';
     if (!Array.isArray(state.groups)) state.groups = [];
     if (!Array.isArray(state.cards)) state.cards = [];
@@ -4691,9 +4694,13 @@ body.theme-night .glyph-music{background:linear-gradient(160deg,#4a2338,#3a1b2c)
     b.textContent = n > 99 ? '99+' : String(n);
   }
 
-  /* 主页资料卡：头像和聊天头像独立 */
+  /* 主页资料卡：头像和聊天头像独立，名字优先用这里设置的 */
+  function homeDisplayName() {
+    return String(state.homeName || state.userName || '我').trim() || '我';
+  }
+
   function paintHomeProfile() {
-    const nm = String(state.userName || '').trim() || '我';
+    const nm = homeDisplayName();
     const img = $('homeAvatarImg'), letter = $('homeAvatarLetter');
     if (state.homeAvatar) {
       img.src = state.homeAvatar;
@@ -4713,12 +4720,12 @@ body.theme-night .glyph-music{background:linear-gradient(160deg,#4a2338,#3a1b2c)
 
   function openHomeProfileEditor() {
     openModal('编辑我的资料',
-      '<label class="field"><span>名字</span><input id="hpNameInput" maxlength="20" placeholder="怎么称呼你？" value="' + esc(state.userName || '我') + '"></label>' +
+      '<label class="field"><span>名字</span><input id="hpNameInput" maxlength="20" placeholder="怎么称呼你？" value="' + esc(homeDisplayName()) + '"></label>' +
       '<label class="field"><span>个签</span><textarea id="hpSigInput" maxlength="80" placeholder="写一句喜欢的话…">' + esc(state.homeSig || '') + '</textarea></label>' +
       '<p class="hint">想换头像？关掉这里，直接点主页上你的头像，就能从相册选择。</p>',
       '保存', function () {
         const nm = String(($('hpNameInput') && $('hpNameInput').value) || '').trim().slice(0, 20);
-        state.userName = nm || '我';
+        state.homeName = nm;
         state.homeSig = String(($('hpSigInput') && $('hpSigInput').value) || '').trim().slice(0, 80);
         save();
         renderHome();
@@ -4731,7 +4738,7 @@ body.theme-night .glyph-music{background:linear-gradient(160deg,#4a2338,#3a1b2c)
     const d = new Date();
     const week = ['周日', '周一', '周二', '周三', '周四', '周五', '周六'][d.getDay()];
     $('homeDate').textContent = (d.getMonth() + 1) + '月' + d.getDate() + '日 · ' + week;
-    const nm = String(state.userName || '').trim();
+    const nm = homeDisplayName();
     $('homeGreet').textContent = greetingText() + (nm ? '，' + nm : '');
     paintHomeProfile();
     const c = activeContact();
