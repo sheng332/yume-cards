@@ -122,6 +122,27 @@ input,textarea{font-family:inherit;}
   transition:background .3s,border-radius .3s;
 }
 
+/* ===================== 启动 / 进入聊天 加载动画 ===================== */
+.app-loading{
+  position:absolute;inset:0;z-index:60;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:11px;
+  background:var(--app-bg);color:var(--muted);
+  font-size:12.5px;text-align:center;
+  opacity:1;transition:opacity .28s ease;
+}
+.app-loading[hidden]{display:none;}
+.app-loading.hide{opacity:0;pointer-events:none;}
+.app-loading .spinner{
+  width:34px;height:34px;border-radius:50%;
+  border:2.6px solid var(--line);border-top-color:var(--accent);
+  animation:yume-spin .8s linear infinite;
+}
+.app-loading b{color:var(--text);font-size:14.5px;font-weight:600;letter-spacing:.2px;}
+.app-loading .loading-line{width:86px;height:3px;border-radius:99px;overflow:hidden;background:var(--line);margin-top:2px;}
+.app-loading .loading-line i{display:block;width:42%;height:100%;border-radius:99px;background:var(--accent);animation:yume-slide 1.15s ease-in-out infinite;}
+@keyframes yume-spin{to{transform:rotate(360deg);}}
+@keyframes yume-slide{0%{transform:translateX(-110%);}55%{transform:translateX(80%);}100%{transform:translateX(250%);}}
+
 /* ===================== 顶栏（居中名字 + 主题底色） ===================== */
 .header{
   position:absolute;top:0;left:0;right:0;z-index:10;
@@ -1231,6 +1252,13 @@ body.theme-mono .tab-item.active svg{color:#141414;}
 <body class="theme-imessage">
 
 <div class="app">
+  <!-- 进入聊天 / 启动加载 -->
+  <div class="app-loading" id="appLoading">
+    <div class="spinner"></div>
+    <b id="appLoadingTitle">正在打开聊天</b>
+    <span id="appLoadingSub">稍等一下下…</span>
+    <div class="loading-line"><i></i></div>
+  </div>
   <!-- 悬浮通话胶囊 -->
   <div class="call-pill" id="callPill">
     <div class="pill-dot"></div>
@@ -2069,6 +2097,39 @@ body.theme-mono .tab-item.active svg{color:#141414;}
     const d = new Date(ts);
     return String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0');
   }
+
+  /* 进入聊天 / 启动时的加载动画 */
+  let appLoadingTimer = 0;
+  let appLoadingToken = 0;
+  let appLoadingShownAt = Date.now();
+  function showAppLoading(title, sub) {
+    const el = $('appLoading');
+    if (!el) return;
+    appLoadingToken++;
+    clearTimeout(appLoadingTimer);
+    const t = $('appLoadingTitle'), s = $('appLoadingSub');
+    if (t && title) t.textContent = title;
+    if (s && sub) s.textContent = sub;
+    el.hidden = false;
+    el.classList.remove('hide');
+    appLoadingShownAt = Date.now();
+  }
+  function hideAppLoading() {
+    const el = $('appLoading');
+    if (!el || el.hidden) return;
+    const token = appLoadingToken;
+    const wait = Math.max(0, 380 - (Date.now() - appLoadingShownAt));
+    clearTimeout(appLoadingTimer);
+    appLoadingTimer = setTimeout(function () {
+      if (token !== appLoadingToken) return;
+      el.classList.add('hide');
+      setTimeout(function () {
+        if (token !== appLoadingToken) return;
+        el.hidden = true;
+      }, 300);
+    }, wait);
+  }
+  setTimeout(function () { hideAppLoading(); }, 8000);
   function formatDuration(seconds) {
     seconds = Math.max(0, Math.floor(seconds || 0));
     const m = Math.floor(seconds / 60);
@@ -4442,8 +4503,12 @@ body.theme-mono .tab-item.active svg{color:#141414;}
     } else if (page === 'more') {
       morePage.classList.add('show');
     } else if (page === 'chat') {
-      if (state.singleMode && activeContact()) openChat(activeContact().id);
-      else openContacts();
+      if (state.singleMode && activeContact()) {
+        // 聊天内容一直挂在页面上，切回来时不用整段重建，避免每次卡顿
+        if (!chatEl.childElementCount) openChat(activeContact().id);
+      } else {
+        openContacts();
+      }
     }
     currentPage = page;
     setTabActive(page);
@@ -5085,6 +5150,7 @@ body.theme-mono .tab-item.active svg{color:#141414;}
   function openChat(id) {
     const c = contactById(id);
     if (!c) return;
+    showAppLoading('正在打开和 TA 的聊天', '把消息铺开…');
     mirrorActive();
     hideTyping();
     syncActiveFromContact(c);
@@ -5098,11 +5164,14 @@ body.theme-mono .tab-item.active svg{color:#141414;}
     updateIdentity(true);
     applyAppearance();
     chatEl.innerHTML = '';
-    c.messages.forEach(m => chatEl.appendChild(buildMessage(m)));
+    const frag = document.createDocumentFragment();
+    c.messages.forEach(m => frag.appendChild(buildMessage(m)));
+    chatEl.appendChild(frag);
     if (c.typing) showTyping();
     settleToBottom();
     renderContactList();
     save();
+    hideAppLoading();
   }
 
   contactListEl.addEventListener('click', function (e) {
@@ -6876,9 +6945,11 @@ body.theme-mono .tab-item.active svg{color:#141414;}
     syncAppearanceInputs();
     applyFont();
     
+    var bootFrag = document.createDocumentFragment();
     state.messages.forEach(m => {
-       chatEl.appendChild(buildMessage(m));
+       bootFrag.appendChild(buildMessage(m));
     });
+    chatEl.appendChild(bootFrag);
     settleToBottom();
     renderContactList();
     updateLetterBadge();
@@ -6917,6 +6988,7 @@ body.theme-mono .tab-item.active svg{color:#141414;}
     }, 60000);
     updateNotifyBtn();
     updateKeepAliveBtn();
+    hideAppLoading();
 
     if (migratedFromKey) {
       setTimeout(function () {
