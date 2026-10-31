@@ -198,7 +198,7 @@ body.theme-wechat .avatar{border-radius:6px;}
 }
 
 .avatar-sm{
-  width:36px;height:36px;border-radius:50%;flex:none;
+  width:var(--avatar-sm-size,36px);height:var(--avatar-sm-size,36px);border-radius:50%;flex:none;
   display:grid;place-items:center;
   background:linear-gradient(135deg,#a77bff,#ff9ecb);
   color:#fff;font-size:14px;font-weight:600;
@@ -211,12 +211,12 @@ body.theme-wechat .avatar{border-radius:6px;}
 
 .msg-content{
   display:flex;flex-direction:column;gap:3px;
-  align-items:flex-start;max-width:calc(100% - 50px);
+  align-items:flex-start;max-width:min(var(--msg-max,78%), calc(100% - var(--avatar-sm-size,36px) - 20px));
 }
 .msg.me .msg-content{align-items:flex-end;}
 
 .bubble{
-  padding:9px 14px;font-size:15px;line-height:1.6;
+  padding:9px 14px;font-size:var(--msg-font,15px);line-height:1.6;
   white-space:pre-wrap;word-break:break-word;
   border-radius:var(--bubble-r);
   box-shadow:0 1px 1px rgba(0,0,0,.04);
@@ -231,6 +231,15 @@ body.theme-wechat .avatar{border-radius:6px;}
   border-top-right-radius:4px;
 }
 .msg .t{font-size:10.5px;color:var(--time-color);padding:0 5px;letter-spacing:.3px;}
+
+/* 系统提示（已读不回等） */
+.sys-note{
+  align-self:center;max-width:86%;margin:2px auto;
+  padding:5px 12px;border-radius:99px;
+  background:var(--panel-bg);border:1px solid var(--line);
+  color:var(--muted);font-size:11.5px;line-height:1.5;text-align:center;
+  animation:pop .3s cubic-bezier(.22,1,.36,1) both;
+}
 
 /* 墨白：黑描边接收气泡、统一方形圆角 */
 body.theme-mono .msg.char .bubble{
@@ -630,8 +639,12 @@ body.theme-mono .tab-item.active svg{color:#141414;}
   color:var(--text);font-size:14px;outline:none;transition:.2s;
 }
 .field input[type=text]:focus, .field input[type=number]:focus{border-color:var(--accent);}
-.field-row{display:flex;gap:10px;}
-.field.half{flex:1;}
+.field input[type=color]{
+  width:100%;height:40px;padding:3px;border-radius:11px;cursor:pointer;
+  background:var(--app-bg);border:1px solid var(--line);
+}
+.field-row{display:flex;gap:10px;flex-wrap:wrap;}
+.field.half{flex:1;min-width:0;}
 
 .avatar-row{display:flex;align-items:center;gap:10px;}
 .theme-list{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;}
@@ -1043,6 +1056,27 @@ body.theme-mono .tab-item.active svg{color:#141414;}
         </div>
 
         <div class="field">
+          <span>气泡与字体</span>
+          <div class="field-row">
+            <label class="field half"><span>气泡最大宽度（%）</span><input type="number" id="setMsgWidth" min="40" max="95" step="1"></label>
+            <label class="field half"><span>头像大小（px）</span><input type="number" id="setAvatarSize" min="24" max="64" step="1"></label>
+            <label class="field half"><span>字体大小（px）</span><input type="number" id="setMsgFont" min="11" max="22" step="1"></label>
+          </div>
+        </div>
+
+        <div class="field">
+          <span>聊天颜色（不选则跟随主题）</span>
+          <div class="field-row">
+            <label class="field half"><span>时间戳</span><input type="color" id="setTimeColor"></label>
+            <label class="field half"><span>我的气泡文字</span><input type="color" id="setMeTextColor"></label>
+            <label class="field half"><span>梦角气泡文字</span><input type="color" id="setCharTextColor"></label>
+          </div>
+          <div class="lib-actions" style="margin:2px 0 0;">
+            <button class="chip" id="btnResetChatColors">颜色跟随主题</button>
+          </div>
+        </div>
+
+        <div class="field">
           <span>聊天背景（可导入多张，点选使用）</span>
           <div class="bg-grid" id="chatBgGrid"></div>
           <div class="lib-actions" style="margin:8px 0 0;">
@@ -1226,6 +1260,8 @@ body.theme-mono .tab-item.active svg{color:#141414;}
   /* 固定存储键：以后无论代码怎么改版，都不再更换 key，避免旧数据“丢失” */
   const LS_KEY = 'yume_cards_data';
   const LS_BACKUP_KEY = 'yume_cards_backup';
+  const IDB_STATE_KEY = 'state_main';
+  const IDB_STATE_BAK = 'state_backup';
   let migratedFromKey = '';
 
   const state = {
@@ -1256,6 +1292,12 @@ body.theme-mono .tab-item.active svg{color:#141414;}
     combineMin: 2,
     combineMax: 3,
     captureEnabled: true,
+    msgWidth: 78,
+    avatarSize: 36,
+    msgFont: 15,
+    timeColor: '',
+    meTextColor: '',
+    charTextColor: '',
     groups: [],
     cards: [],
     stickers: [],
@@ -1332,6 +1374,8 @@ body.theme-mono .tab-item.active svg{color:#141414;}
       quoteProb: state.quoteProb, recallProb: state.recallProb, answerProb: state.answerProb,
       combineProb: state.combineProb, combineMin: state.combineMin, combineMax: state.combineMax,
       captureEnabled: state.captureEnabled,
+      msgWidth: state.msgWidth, avatarSize: state.avatarSize, msgFont: state.msgFont,
+      timeColor: state.timeColor, meTextColor: state.meTextColor, charTextColor: state.charTextColor,
       groups: state.groups, cards: state.cards, stickers: state.stickers, chars: state.chars,
       messages: state.messages.slice(-400), lastId: state.lastId,
       songs: state.songs.map(function (s) { return { id: s.id, name: s.name, artist: s.artist, cover: s.cover, url: s.url || '' }; }),
@@ -1370,8 +1414,7 @@ body.theme-mono .tab-item.active svg{color:#141414;}
     } catch (e) { return false; }
   }
 
-  function save() {
-    const data = snapshotData();
+  function saveLocal(data) {
     let sizeKB = 0;
     try { sizeKB = JSON.stringify(data).length / 1024; } catch (e) {}
     let ok = writeStore(LS_KEY, data);
@@ -1392,6 +1435,30 @@ body.theme-mono .tab-item.active svg{color:#141414;}
       storageWarn();
     }
     return ok;
+  }
+
+  function save() {
+    const data = snapshotData();
+    // 优先存进 IndexedDB：容量大，图片可以保留清晰度，不受 localStorage 5MB 限制
+    if (window.indexedDB) {
+      try {
+        idbPut(IDB_STATE_KEY, data).then(function () {
+          clearTimeout(backupTimer);
+          backupTimer = setTimeout(function () {
+            idbPut(IDB_STATE_BAK, data).catch(function () {});
+          }, 1000);
+        }).catch(function () { saveLocal(data); });
+        return true;
+      } catch (e) { /* 落到 localStorage */ }
+    }
+    return saveLocal(data);
+  }
+
+  function loadFromIDB() {
+    if (!window.indexedDB) return Promise.resolve(null);
+    return idbGet(IDB_STATE_KEY).then(function (d) {
+      return d || idbGet(IDB_STATE_BAK);
+    }).catch(function () { return null; });
   }
 
   function dataScore(d) {
@@ -1451,6 +1518,12 @@ body.theme-mono .tab-item.active svg{color:#141414;}
     if (typeof d.combineMin === 'number') state.combineMin = d.combineMin;
     if (typeof d.combineMax === 'number') state.combineMax = d.combineMax;
     if (typeof d.captureEnabled === 'boolean') state.captureEnabled = d.captureEnabled;
+    if (typeof d.msgWidth === 'number') state.msgWidth = d.msgWidth;
+    if (typeof d.avatarSize === 'number') state.avatarSize = d.avatarSize;
+    if (typeof d.msgFont === 'number') state.msgFont = d.msgFont;
+    if (typeof d.timeColor === 'string') state.timeColor = d.timeColor;
+    if (typeof d.meTextColor === 'string') state.meTextColor = d.meTextColor;
+    if (typeof d.charTextColor === 'string') state.charTextColor = d.charTextColor;
 
     if (Array.isArray(d.groups)) state.groups = d.groups;
     if (Array.isArray(d.cards)) state.cards = d.cards;
@@ -1501,6 +1574,12 @@ body.theme-mono .tab-item.active svg{color:#141414;}
     if (!Array.isArray(state.callBgs)) state.callBgs = [];
     if (!Array.isArray(state.fonts)) state.fonts = [];
     if (typeof state.captureEnabled !== 'boolean') state.captureEnabled = true;
+    if (typeof state.msgWidth !== 'number' || !isFinite(state.msgWidth)) state.msgWidth = 78;
+    if (typeof state.avatarSize !== 'number' || !isFinite(state.avatarSize)) state.avatarSize = 36;
+    if (typeof state.msgFont !== 'number' || !isFinite(state.msgFont)) state.msgFont = 15;
+    if (typeof state.timeColor !== 'string') state.timeColor = '';
+    if (typeof state.meTextColor !== 'string') state.meTextColor = '';
+    if (typeof state.charTextColor !== 'string') state.charTextColor = '';
     if (!Array.isArray(state.songs)) state.songs = [];
     if (typeof state.songIdx !== 'number') state.songIdx = -1;
     if (state.songIdx >= state.songs.length) state.songIdx = state.songs.length - 1;
@@ -1598,6 +1677,12 @@ body.theme-mono .tab-item.active svg{color:#141414;}
   };
 
   function buildMessage(msg) {
+    if (msg.role === 'sys') {
+      const note = document.createElement('div');
+      note.className = 'sys-note';
+      note.textContent = msg.content;
+      return note;
+    }
     const wrap = document.createElement('div');
     wrap.className = 'msg ' + msg.role;
     wrap.id = 'msg-' + msg.id;
@@ -1915,14 +2000,14 @@ body.theme-mono .tab-item.active svg{color:#141414;}
       reader.onload = function () {
         const img = new Image();
         img.onload = function () {
-          const maxSide = 256;
+          const maxSide = 512;
           const scale = Math.min(1, maxSide / Math.max(img.width, img.height));
           const canvas = document.createElement('canvas');
           canvas.width = Math.max(1, Math.round(img.width * scale));
           canvas.height = Math.max(1, Math.round(img.height * scale));
           const ctx = canvas.getContext('2d');
           ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-          const dataUrl = canvas.toDataURL('image/jpeg', 0.86);
+          const dataUrl = canvas.toDataURL('image/jpeg', 0.9);
           
           if (isUser) state.userAvatar = dataUrl; else state.avatar = dataUrl;
           
@@ -2000,6 +2085,7 @@ body.theme-mono .tab-item.active svg{color:#141414;}
     if (Math.random() * 100 < state.ignoreProb) {
       await sleep(800);
       busy = false; updateSendState();
+      pushMessage('sys', 'note', '已读不回 · 梦角看到了，但暂时没有回复你');
       if (pendingReply) triggerReply();
       return;
     }
@@ -2547,7 +2633,7 @@ body.theme-mono .tab-item.active svg{color:#141414;}
         img.onload = function() {
           const canvas = document.createElement('canvas');
           let w = img.width, h = img.height;
-          const max = 200;
+          const max = 320;
           if (w > max || h > max) {
             if (w > h) { h = h * (max / w); w = max; }
             else { w = w * (max / h); h = max; }
@@ -3148,7 +3234,7 @@ body.theme-mono .tab-item.active svg{color:#141414;}
         const ctx = canvas.getContext('2d');
         ctx.fillStyle = '#ffffff'; ctx.fillRect(0, 0, w, h);
         ctx.drawImage(img, 0, 0, w, h);
-        cb(canvas.toDataURL('image/jpeg', 0.62));
+        cb(canvas.toDataURL('image/jpeg', 0.82));
       };
       img.onerror = function () { cb(null); };
       img.src = reader.result;
@@ -3167,7 +3253,7 @@ body.theme-mono .tab-item.active svg{color:#141414;}
     let pending = picked.length;
     let firstNewId = '';
     picked.forEach(file => {
-      compressImage(file, 1000, function (url) {
+      compressImage(file, 1600, function (url) {
         pending--;
         if (url) {
           const id = 'bg' + Date.now().toString(36) + Math.random().toString(36).slice(2, 5);
@@ -3240,6 +3326,20 @@ body.theme-mono .tab-item.active svg{color:#141414;}
 
   function applyAppearance() {
     applyChatBg(); applyCallBg(); applyBubbleCss();
+    applyChatMetrics();
+  }
+
+  function applyChatMetrics() {
+    const root = document.documentElement.style;
+    const w = Math.min(95, Math.max(40, Number(state.msgWidth) || 78));
+    const a = Math.min(64, Math.max(24, Number(state.avatarSize) || 36));
+    const f = Math.min(22, Math.max(11, Number(state.msgFont) || 15));
+    root.setProperty('--msg-max', w + '%');
+    root.setProperty('--avatar-sm-size', a + 'px');
+    root.setProperty('--msg-font', f + 'px');
+    if (state.timeColor) root.setProperty('--time-color', state.timeColor); else root.removeProperty('--time-color');
+    if (state.meTextColor) root.setProperty('--me-text', state.meTextColor); else root.removeProperty('--me-text');
+    if (state.charTextColor) root.setProperty('--char-text', state.charTextColor); else root.removeProperty('--char-text');
   }
 
   function renderFontList() {
@@ -3276,8 +3376,37 @@ body.theme-mono .tab-item.active svg{color:#141414;}
 
   function syncAppearanceInputs() {
     $('bubbleCssInput').value = state.bubbleCss || '';
+    $('setMsgWidth').value = state.msgWidth;
+    $('setAvatarSize').value = state.avatarSize;
+    $('setMsgFont').value = state.msgFont;
+    $('setTimeColor').value = state.timeColor || '#8e8e93';
+    $('setMeTextColor').value = state.meTextColor || '#ffffff';
+    $('setCharTextColor').value = state.charTextColor || '#191919';
     renderFontList();
   }
+
+  [['setMsgWidth', 'msgWidth', 40, 95], ['setAvatarSize', 'avatarSize', 24, 64], ['setMsgFont', 'msgFont', 11, 22]].forEach(function (it) {
+    const el = $(it[0]);
+    el.addEventListener('change', function () {
+      let v = Math.round(Number(el.value) || state[it[1]]);
+      v = Math.min(it[3], Math.max(it[2], v));
+      el.value = v;
+      state[it[1]] = v;
+      applyChatMetrics(); save();
+    });
+  });
+  [['setTimeColor', 'timeColor'], ['setMeTextColor', 'meTextColor'], ['setCharTextColor', 'charTextColor']].forEach(function (it) {
+    const el = $(it[0]);
+    el.addEventListener('input', function () {
+      state[it[1]] = el.value; applyChatMetrics();
+    });
+    el.addEventListener('change', function () { save(); });
+  });
+  $('btnResetChatColors').addEventListener('click', function () {
+    state.timeColor = ''; state.meTextColor = ''; state.charTextColor = '';
+    syncAppearanceInputs(); applyChatMetrics(); save();
+    toast('已恢复跟随主题颜色');
+  });
 
   $('chatBgGrid').addEventListener('click', e => onBgClick('chat', e));
   $('callBgGrid').addEventListener('click', e => onBgClick('call', e));
@@ -3528,8 +3657,16 @@ body.theme-mono .tab-item.active svg{color:#141414;}
   $('modalClose').addEventListener('click', closeModal);
 
   /* 初始化启动 */
-  function init() {
-    if (!load()) {
+  function boot(fromIdb) {
+    let source = fromIdb;
+    // 万一上一次 IndexedDB 写入失败、localStorage 反而是新的，则用较新的那份
+    try {
+      const local = readStore(LS_KEY);
+      if (local && (!source || (local.savedAt || 0) > (source.savedAt || 0))) source = local;
+    } catch (e) {}
+    let loaded = false;
+    if (source) loaded = applyData(source);
+    if (!loaded && !load()) {
       seedData();
       state.messages.push({
         id: uid(), role: 'char', type: 'text', 
@@ -3568,13 +3705,18 @@ body.theme-mono .tab-item.active svg{color:#141414;}
     }
   }
 
+  // 优先使用 IndexedDB 里的大容量数据；没有时回退到旧版 localStorage 数据
+  if (window.indexedDB) {
+    loadFromIDB().then(boot).catch(function () { boot(null); });
+  } else {
+    boot(null);
+  }
+
   // 页面被切到后台/关闭前再存一次，避免移动端直接杀进程导致最后一条丢失
   window.addEventListener('pagehide', save);
   document.addEventListener('visibilitychange', function () {
     if (document.visibilityState === 'hidden') save();
   });
-
-  init();
 })();
 </script>
 </body>
