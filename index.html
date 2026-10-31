@@ -131,6 +131,17 @@ input,textarea{font-family:inherit;}
   min-width:0;text-align:center;pointer-events:auto;cursor:pointer;
   filter:drop-shadow(0 1px 3px rgba(0,0,0,.18));
 }
+.chat-back{
+  position:absolute;left:8px;top:50%;transform:translateY(-50%);
+  width:34px;height:34px;border-radius:10px;
+  display:grid;place-items:center;
+  background:transparent;border:none;color:var(--text);
+  cursor:pointer;padding:0;
+  filter:drop-shadow(0 1px 3px rgba(0,0,0,.18));
+  transition:background .15s;
+}
+.chat-back:hover{background:var(--card-hover);}
+.chat-back svg{width:22px;height:22px;}
 .header .avatar{
   width:34px;height:34px;font-size:13px;margin-bottom:1px;
 }
@@ -917,6 +928,9 @@ body.theme-mono .tab-item.active svg{color:#141414;}
   </div>
 
   <header class="header">
+    <button class="chat-back" id="btnChatBack" aria-label="返回联系人列表">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5 8 12l7 7"/></svg>
+    </button>
     <div class="header-center" id="headerCenter">
       <div class="avatar" id="headAvatar">梦</div>
       <b class="head-name" id="headName">梦角</b>
@@ -1090,6 +1104,19 @@ body.theme-mono .tab-item.active svg{color:#141414;}
   </div>
 
   <div class="drawer-scroll">
+    <div class="set-group open">
+      <div class="set-group-header"><span>聊天模式</span><span class="arrow">▼</span></div>
+      <div class="set-group-body">
+        <div class="field" style="flex-direction:row;align-items:center;justify-content:space-between;gap:14px;">
+          <div style="display:flex;flex-direction:column;gap:3px;min-width:0;">
+            <span style="font-size:13px;color:var(--text);">单人模式</span>
+            <span class="hint">开启后，点底部「聊天」直接进入当前梦角的聊天；关闭后，点「聊天」先看到联系人列表。当前梦角就是页面上次打开的这位，可在联系人列表里切换。</span>
+          </div>
+          <button class="sw off" id="swSingle" aria-label="单人模式开关"></button>
+        </div>
+      </div>
+    </div>
+
     <div class="set-group">
       <div class="set-group-header"><span>美化风格</span><span class="arrow">▼</span></div>
       <div class="set-group-body">
@@ -1345,6 +1372,7 @@ body.theme-mono .tab-item.active svg{color:#141414;}
     combineMax: 3,
     captureEnabled: true,
     soundEnabled: true,
+    singleMode: false,
     msgWidth: 78,
     avatarSize: 36,
     msgFont: 15,
@@ -1533,6 +1561,7 @@ body.theme-mono .tab-item.active svg{color:#141414;}
       combineProb: state.combineProb, combineMin: state.combineMin, combineMax: state.combineMax,
       captureEnabled: state.captureEnabled,
       soundEnabled: state.soundEnabled,
+      singleMode: state.singleMode,
       msgWidth: state.msgWidth, avatarSize: state.avatarSize, msgFont: state.msgFont,
       timeColor: state.timeColor, meTextColor: state.meTextColor, charTextColor: state.charTextColor,
       groups: state.groups, cards: state.cards,
@@ -1693,6 +1722,7 @@ body.theme-mono .tab-item.active svg{color:#141414;}
     if (typeof d.combineMax === 'number') state.combineMax = d.combineMax;
     if (typeof d.captureEnabled === 'boolean') state.captureEnabled = d.captureEnabled;
     if (typeof d.soundEnabled === 'boolean') state.soundEnabled = d.soundEnabled;
+    if (typeof d.singleMode === 'boolean') state.singleMode = d.singleMode;
     if (typeof d.msgWidth === 'number') state.msgWidth = d.msgWidth;
     if (typeof d.avatarSize === 'number') state.avatarSize = d.avatarSize;
     if (typeof d.msgFont === 'number') state.msgFont = d.msgFont;
@@ -2338,9 +2368,12 @@ body.theme-mono .tab-item.active svg{color:#141414;}
     if (!c) return;
     c.busy = true;
     c.pending = false;
+    c.typing = false;
     updateSendState();
 
-    const calledThisTurn = Math.random() * 100 < state.callProb;
+    // 正在和 TA 通话时，本轮不再生成新的来电/去电，避免覆盖进行中的通话
+    const inCallWithThis = callState !== 'idle' && c.id === callContactId;
+    const calledThisTurn = !inCallWithThis && Math.random() * 100 < state.callProb;
     if (calledThisTurn) {
       // 这一轮里打电话，但继续把该发的消息发完，不打断回复
       startCall('incoming', c);
@@ -2348,6 +2381,7 @@ body.theme-mono .tab-item.active svg{color:#141414;}
 
     if (!calledThisTurn && Math.random() * 100 < state.ignoreProb) {
       await sleep(800);
+      c.typing = false; if (c === activeContact()) hideTyping();
       c.busy = false; updateSendState();
       pushMessageTo(c, 'sys', 'note', '已读不回 · ' + (c.name || '梦角') + '看到了，但暂时没有回复你');
       if (c.pending) triggerReply(c);
@@ -2362,6 +2396,8 @@ body.theme-mono .tab-item.active svg{color:#141414;}
     if (!textPool.length && !stickerPool.length) {
       await sleep(420);
       pushMessageTo(c, 'char', 'text', '（字卡库和表情包都是空的……点底部「字卡库」添加一些吧）');
+      c.typing = false;
+      if (c === activeContact()) hideTyping();
       c.busy = false; updateSendState(); return;
     }
 
@@ -2371,8 +2407,10 @@ body.theme-mono .tab-item.active svg{color:#141414;}
       const wait = i === 0
         ? state.minDelay + Math.random() * (state.maxDelay - state.minDelay)
         : 3000;
+      c.typing = true;
       if (c === activeContact()) showTyping();
       await sleep(wait);
+      c.typing = false;
       if (c === activeContact()) hideTyping();
 
       let sendSticker = false;
@@ -2413,6 +2451,8 @@ body.theme-mono .tab-item.active svg{color:#141414;}
       }
     }
 
+    c.typing = false;
+    if (c === activeContact()) hideTyping();
     c.busy = false; updateSendState();
     if (c.pending) triggerReply(c);
   }
@@ -2427,8 +2467,10 @@ body.theme-mono .tab-item.active svg{color:#141414;}
       save();
 
       await sleep(1000 + Math.random() * 1500);
+      c.typing = true;
       if (c === activeContact()) showTyping();
       await sleep(state.minDelay);
+      c.typing = false;
       if (c === activeContact()) hideTyping();
 
       if (textPool.length > 0) {
@@ -2499,6 +2541,8 @@ body.theme-mono .tab-item.active svg{color:#141414;}
     // 已经在通话中：其他人来电 / 你拨号都直接生成“正在与他人通话”卡片
     if (callState !== 'idle') {
       if (!c) return false;
+      // 已经在和 TA 通话：不再生成新的通话/忙线卡片，保持当前通话
+      if (c.id === callContactId) return false;
       if (type === 'outgoing') {
         toast('你正在通话中，先挂断再拨号吧');
         pushMessageTo(c, 'me', 'call', '', { callStatus: 'busy' });
@@ -3230,13 +3274,14 @@ body.theme-mono .tab-item.active svg{color:#141414;}
     if (page === 'lib') {
       openLib();
     } else if (page === 'set') {
-      updateIdentity(false); syncThemeButtons(); syncReplySettings(); syncCaptureSwitch(); syncSoundSwitch();
+      updateIdentity(false); syncThemeButtons(); syncReplySettings(); syncCaptureSwitch(); syncSoundSwitch(); syncSingleSwitch();
       renderBgPicker('call'); syncAppearanceInputs();
       settings.classList.add('show');
     } else if (page === 'more') {
       morePage.classList.add('show');
     } else if (page === 'chat') {
-      openContacts();
+      if (state.singleMode && activeContact()) openChat(activeContact().id);
+      else openContacts();
     }
     currentPage = page;
     setTabActive(page);
@@ -3547,6 +3592,7 @@ body.theme-mono .tab-item.active svg{color:#141414;}
     applyAppearance();
     chatEl.innerHTML = '';
     c.messages.forEach(m => chatEl.appendChild(buildMessage(m)));
+    if (c.typing) showTyping();
     toBottom(false);
     renderContactList();
     save();
@@ -3556,6 +3602,8 @@ body.theme-mono .tab-item.active svg{color:#141414;}
     const row = e.target.closest('[data-cid]');
     if (row) openChat(row.dataset.cid);
   });
+
+  $('btnChatBack').addEventListener('click', function () { openContacts(); });
 
   $('btnAddContact').addEventListener('click', function () {
     openModal('添加联系人',
@@ -4121,6 +4169,21 @@ body.theme-mono .tab-item.active svg{color:#141414;}
     toast(state.soundEnabled ? '提示音已开启' : '提示音已关闭');
   });
 
+  /* 单人模式开关 */
+  function applyChatMode() {
+    const b = $('btnChatBack');
+    if (b) b.style.display = state.singleMode ? 'none' : 'grid';
+  }
+  function syncSingleSwitch() {
+    $('swSingle').classList.toggle('off', !state.singleMode);
+    applyChatMode();
+  }
+  $('swSingle').addEventListener('click', function () {
+    state.singleMode = !state.singleMode;
+    syncSingleSwitch(); save();
+    toast(state.singleMode ? '已开启单人模式：点「聊天」直接进入当前梦角' : '已关闭单人模式：点「聊天」先选联系人');
+  });
+
   $('btnClearChat').addEventListener('click', () => {
     const c = activeContact();
     if (!c) return;
@@ -4273,6 +4336,7 @@ body.theme-mono .tab-item.active svg{color:#141414;}
     syncReplySettings();
     syncCaptureSwitch();
     syncSoundSwitch();
+    syncSingleSwitch();
     applyAppearance();
     renderBgPicker('chat');
     renderBgPicker('call');
