@@ -381,6 +381,7 @@ body.theme-mono .quote-box{border-left-color:#141414;}
 .lyric-card .lc-text{
   border-left:3px solid var(--quote-border);padding-left:9px;
   font-size:14px;line-height:1.75;color:var(--text);
+  white-space:pre-line;
 }
 .lyric-card .lc-src{font-size:11px;color:var(--muted);text-align:right;margin-top:6px;}
 
@@ -1317,6 +1318,26 @@ body.theme-mono .tab-item.active svg{color:#141414;}
     </div>
 
     <div class="set-group">
+      <div class="set-group-header"><span>后台通知</span><span class="arrow">▼</span></div>
+      <div class="set-group-body">
+        <div class="field" style="flex-direction:row;align-items:center;justify-content:space-between;gap:14px;">
+          <div style="display:flex;flex-direction:column;gap:3px;min-width:0;">
+            <span style="font-size:13px;color:var(--text);">消息 / 来信通知</span>
+            <span class="hint">开启后，App 切到后台时，TA 发消息或写信会弹系统通知，点通知可直接跳回对应聊天或信件。浏览器无法真正让网页一直后台运行，回到前台时会自动补上错过的消息。</span>
+          </div>
+          <button class="chip" id="btnNotify">开启</button>
+        </div>
+        <div class="field" style="flex-direction:row;align-items:center;justify-content:space-between;gap:14px;">
+          <div style="display:flex;flex-direction:column;gap:3px;min-width:0;">
+            <span style="font-size:13px;color:var(--text);">后台保活（实验）</span>
+            <span class="hint">切到后台时播放一段无声音频，尽量减少系统把 App 冻结，让消息和来信更准时；会轻微耗电，部分手机仍可能被系统限制。</span>
+          </div>
+          <button class="chip" id="btnKeepAlive">开启</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="set-group">
       <div class="set-group-header"><span>美化风格</span><span class="arrow">▼</span></div>
       <div class="set-group-body">
         <div class="theme-list" id="themeList">
@@ -1628,7 +1649,9 @@ body.theme-mono .tab-item.active svg{color:#141414;}
       switchProb: 10
     },
     songs: [],
-    songIdx: -1
+    songIdx: -1,
+    notifyOn: false,
+    keepAlive: false
   };
 
   const ui = {
@@ -1810,6 +1833,8 @@ body.theme-mono .tab-item.active svg{color:#141414;}
       contacts: contacts, activeId: state.activeId,
       letters: state.letters.slice(0, 50), letterCfg: state.letterCfg,
       musicCfg: state.musicCfg,
+      notifyOn: !!state.notifyOn,
+      keepAlive: !!state.keepAlive,
       messages: state.messages.slice(-400), lastId: state.lastId,
       songs: state.songs.map(function (s) { return { id: s.id, name: s.name, artist: s.artist, cover: s.cover, url: s.url || '', lrc: s.lrc || '' }; }),
       songIdx: state.songIdx
@@ -1985,6 +2010,8 @@ body.theme-mono .tab-item.active svg{color:#141414;}
     if (d.musicCfg && typeof d.musicCfg === 'object') {
       state.musicCfg = Object.assign({}, state.musicCfg, d.musicCfg);
     }
+    if (typeof d.notifyOn === 'boolean') state.notifyOn = d.notifyOn;
+    if (typeof d.keepAlive === 'boolean') state.keepAlive = d.keepAlive;
     if (Array.isArray(d.messages)) state.messages = d.messages;
     if (typeof d.lastId === 'string') state.lastId = d.lastId;
     if (Array.isArray(d.songs)) state.songs = d.songs.filter(function (s) { return s && s.id; }).map(function (s) {
@@ -2441,6 +2468,129 @@ body.theme-mono .tab-item.active svg{color:#141414;}
     bannerTimer = setTimeout(function () { el.classList.remove('show'); }, 3500);
   }
 
+  /* ================= 后台通知 ================= */
+  let swReg = null;
+
+  function notifyTextOf(msg) {
+    if (!msg) return '';
+    if (msg.role === 'me') return '我: ' + (msg.content || '');
+    if (msg.type === 'emoji') return '[表情包]';
+    if (msg.type === 'image') return '[图片]';
+    if (msg.type === 'music') return '邀请你一起听《' + (msg.content || '') + '》';
+    if (msg.type === 'lyric') return '摘一句：' + String(msg.content || '').replace(/\n/g, ' / ');
+    if (msg.type === 'call') return '[语音通话]';
+    return String(msg.content || '').slice(0, 80);
+  }
+
+  function routeNotify(data) {
+    if (!data) return;
+    if (data.lid) { openLetters(data.lid); return; }
+    if (data.cid) {
+      const c = contactById(data.cid);
+      if (c) openChat(c.id);
+    }
+  }
+
+  function notifyGranted() {
+    return !!state.notifyOn && typeof Notification !== 'undefined' && Notification.permission === 'granted';
+  }
+
+  function showSystemNotify(title, body, data) {
+    if (!notifyGranted() || !document.hidden) return;
+    const opts = {
+      body: body || '',
+      icon: './icon-192.png',
+      badge: './icon-192.png',
+      tag: (data && data.tag) || 'yume',
+      data: data || {},
+      renotify: true
+    };
+    try {
+      if (swReg && typeof swReg.showNotification === 'function') {
+        swReg.showNotification(title || '字卡传讯', opts);
+      } else {
+        const n = new Notification(title || '字卡传讯', opts);
+        n.onclick = function () {
+          try { window.focus(); } catch (e) {}
+          routeNotify(data);
+          n.close();
+        };
+      }
+    } catch (e) {}
+  }
+
+  function updateNotifyBtn() {
+    const b = $('btnNotify');
+    if (!b) return;
+    if (typeof Notification === 'undefined') { b.textContent = '不支持'; return; }
+    if (Notification.permission === 'denied') { b.textContent = '被拒绝'; return; }
+    if (Notification.permission === 'granted' && state.notifyOn) { b.textContent = '已开启'; return; }
+    b.textContent = '开启';
+  }
+
+  function askNotify() {
+    if (typeof Notification === 'undefined') { toast('这个浏览器不支持通知'); return; }
+    if (Notification.permission === 'denied') { toast('通知已被浏览器拒绝，请到站点设置里允许'); return; }
+    if (Notification.permission === 'granted') {
+      state.notifyOn = !state.notifyOn;
+      save(); updateNotifyBtn();
+      toast(state.notifyOn ? '后台通知已开启' : '后台通知已关闭');
+      return;
+    }
+    Notification.requestPermission().then(function (p) {
+      state.notifyOn = (p === 'granted');
+      save(); updateNotifyBtn();
+      toast(p === 'granted' ? '后台通知已开启' : '没有获得通知权限');
+    }).catch(function () {});
+  }
+
+  /* 后台保活：切后台时用极低音量振荡器占住音频，尽量减缓冻结 */
+  let keepCtx = null, keepOsc = null, keepGain = null;
+
+  function updateKeepAliveBtn() {
+    const b = $('btnKeepAlive');
+    if (b) b.textContent = state.keepAlive ? '已开启' : '开启';
+  }
+
+  function startKeepAlive() {
+    if (!state.keepAlive) return;
+    try {
+      const AC = window.AudioContext || window.webkitAudioContext;
+      if (!AC) return;
+      if (!keepCtx) keepCtx = new AC();
+      if (keepCtx.state === 'suspended') keepCtx.resume();
+      if (!keepOsc) {
+        keepGain = keepCtx.createGain();
+        keepGain.gain.value = 0.0001;
+        keepOsc = keepCtx.createOscillator();
+        keepOsc.frequency.value = 30;
+        keepOsc.connect(keepGain);
+        keepGain.connect(keepCtx.destination);
+        keepOsc.start();
+      }
+    } catch (e) {}
+  }
+
+  function stopKeepAlive() {
+    try { if (keepOsc) { keepOsc.stop(); keepOsc.disconnect(); } } catch (e) {}
+    try { if (keepGain) keepGain.disconnect(); } catch (e) {}
+    keepOsc = null; keepGain = null;
+    try { if (keepCtx && keepCtx.state === 'running') keepCtx.suspend(); } catch (e) {}
+  }
+
+  function toggleKeepAlive() {
+    state.keepAlive = !state.keepAlive;
+    save(); updateKeepAliveBtn();
+    if (state.keepAlive) {
+      startKeepAlive();          // 借这次点击手势创建音频上下文
+      if (!document.hidden) stopKeepAlive();
+      toast('后台保活已开启（实验）');
+    } else {
+      stopKeepAlive();
+      toast('后台保活已关闭');
+    }
+  }
+
   function pushMessageTo(contact, role, type, content, extra = {}) {
     const c = contact || activeContact();
     if (!c) return null;
@@ -2460,7 +2610,10 @@ body.theme-mono .tab-item.active svg{color:#141414;}
         refreshContactList();
       }
     }
-    if (role === 'char' && type !== 'call') playMessageSound();
+    if (role === 'char' && type !== 'call') {
+      playMessageSound();
+      showSystemNotify(c.name || '梦角', notifyTextOf(msg), { type: 'chat', cid: c.id, mid: msg.id, tag: 'msg-' + c.id });
+    }
     save();
     return msg;
   }
@@ -2706,7 +2859,9 @@ body.theme-mono .tab-item.active svg{color:#141414;}
     if (!c) return;
     if (c.busy) { c.pending = true; return; }
     clearTimeout(c.replyTimer);
+    c.replyDueAt = Date.now() + 1500;
     c.replyTimer = setTimeout(function () {
+      c.replyDueAt = 0;
       if (!c.busy) triggerReply(c); else c.pending = true;
     }, 1500);
   }
@@ -3928,9 +4083,16 @@ body.theme-mono .tab-item.active svg{color:#141414;}
     if (!c || !song) return;
     const lines = lyricsCache[song.id] || [];
     if (!lines.length) return;
-    const pick = lines[Math.floor(Math.random() * lines.length)];
-    if (!pick || !pick.text) return;
-    pushMessageTo(c, 'char', 'lyric', pick.text, {
+    // 摘 1~5 句连续歌词
+    const n = 1 + Math.floor(Math.random() * 5);
+    const t = (audio.currentTime || 0) * 1000;
+    let base = 0;
+    for (let i = 0; i < lines.length; i++) { if (lines[i].ms <= t + 50) base = i; else break; }
+    let start = base;
+    if (start > lines.length - n) start = Math.max(0, lines.length - n);
+    const part = lines.slice(start, start + n).map(function (x) { return x.text; }).filter(Boolean);
+    if (!part.length) return;
+    pushMessageTo(c, 'char', 'lyric', part.join('\n'), {
       songName: song.name, artist: song.artist, songIdx: state.songIdx
     });
     save();
@@ -4265,7 +4427,7 @@ body.theme-mono .tab-item.active svg{color:#141414;}
     if (m.type === 'emoji') return prefix + '[表情包]';
     if (m.type === 'image') return prefix + '[图片]';
     if (m.type === 'music') return prefix + '邀请你一起听《' + (m.content || '') + '》';
-    if (m.type === 'lyric') return prefix + '摘一句：' + (m.content || '');
+    if (m.type === 'lyric') return prefix + '摘一句：' + String(m.content || '').replace(/\n/g, ' / ');
     if (m.type === 'call') {
       if (m.callStatus === 'busy') return '[语音通话] 对方正在与他人通话';
       if (m.callStatus === 'answered') return '[语音通话] 通话 ' + (m.duration || '');
@@ -4542,6 +4704,7 @@ body.theme-mono .tab-item.active svg{color:#141414;}
       renderLettersIfOpen();
     } else {
       showLetterBanner(letter, c);
+      showSystemNotify(c.name || '梦角', '给你写了一封信', { type: 'letter', cid: c.id, lid: letter.id, tag: 'letter-' + c.id });
     }
     save();
     updateLetterBadge();
@@ -5265,6 +5428,8 @@ body.theme-mono .tab-item.active svg{color:#141414;}
     // 信件：到点检查一次，之后每分钟检查
     setTimeout(checkLetterDue, 900);
     letterTimer = setInterval(checkLetterDue, 60000);
+    updateNotifyBtn();
+    updateKeepAliveBtn();
 
     if (migratedFromKey) {
       setTimeout(function () {
@@ -5276,9 +5441,18 @@ body.theme-mono .tab-item.active svg{color:#141414;}
   // PWA：安装到桌面后可独立打开（仅 https 下注册）
   if ('serviceWorker' in navigator && location.protocol === 'https:') {
     window.addEventListener('load', function () {
-      navigator.serviceWorker.register('./sw.js').catch(function () {});
+      navigator.serviceWorker.register('./sw.js').then(function (r) { swReg = r; }).catch(function () {});
     });
   }
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.addEventListener('message', function (e) {
+      const d = e.data;
+      if (d && d.type === 'yume-notify') routeNotify(d.data);
+    });
+  }
+
+  $('btnNotify').addEventListener('click', askNotify);
+  $('btnKeepAlive').addEventListener('click', toggleKeepAlive);
 
   // 优先使用 IndexedDB 里的大容量数据；没有时回退到旧版 localStorage 数据
   if (window.indexedDB) {
@@ -5292,8 +5466,35 @@ body.theme-mono .tab-item.active svg{color:#141414;}
   // 页面被切到后台/关闭前再存一次，避免移动端直接杀进程导致最后一条丢失
   window.addEventListener('pagehide', save);
   document.addEventListener('visibilitychange', function () {
-    if (document.visibilityState === 'hidden') save();
+    if (document.visibilityState === 'hidden') {
+      save();
+      if (state.keepAlive) startKeepAlive();
+      return;
+    }
+    // 回到前台：补上被系统冻结时错过的回复和信件
+    stopKeepAlive();
+    updateNotifyBtn();
+    updateKeepAliveBtn();
+    checkLetterDue();
+    state.contacts.forEach(function (c) {
+      if (!c || c.busy || !c.replyDueAt) return;
+      if (Date.now() >= c.replyDueAt) {
+        clearTimeout(c.replyTimer);
+        c.replyDueAt = 0;
+        c.pending = false;
+        triggerReply(c);
+      }
+    });
   });
+
+  // 从系统通知点进来（冷启动）时自动跳转
+  try {
+    const m = location.search.match(/[?&]notify=([^&]+)/);
+    if (m) {
+      const d = JSON.parse(decodeURIComponent(m[1]));
+      setTimeout(function () { routeNotify(d); }, 800);
+    }
+  } catch (e) {}
 })();
 </script>
 </body>
