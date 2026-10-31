@@ -1112,6 +1112,13 @@ body.theme-mono .tab-item.active svg{color:#141414;}
             <button class="chip" id="btnResetBubbleCss">恢复默认</button>
           </div>
         </div>
+        <div class="field" style="flex-direction:row;align-items:center;justify-content:space-between;gap:14px;">
+          <div style="display:flex;flex-direction:column;gap:3px;min-width:0;">
+            <span style="font-size:13px;color:var(--text);">提示音</span>
+            <span class="hint">收到消息、对方来电、你主动拨号时播放提示音。</span>
+          </div>
+          <button class="sw" id="swSound" aria-label="提示音开关"></button>
+        </div>
       </div>
     </div>
 
@@ -1292,6 +1299,7 @@ body.theme-mono .tab-item.active svg{color:#141414;}
     combineMin: 2,
     combineMax: 3,
     captureEnabled: true,
+    soundEnabled: true,
     msgWidth: 78,
     avatarSize: 36,
     msgFont: 15,
@@ -1336,6 +1344,65 @@ body.theme-mono .tab-item.active svg{color:#141414;}
   const sleep = ms => new Promise(r => setTimeout(r, ms));
 
   let toastTimer = null;
+  /* ================= 提示音 ================= */
+  let audioCtx = null;
+  let callSoundTimer = null;
+
+  function ensureAudio() {
+    if (!state.soundEnabled) return null;
+    try {
+      const AC = window.AudioContext || window.webkitAudioContext;
+      if (!AC) return null;
+      if (!audioCtx) audioCtx = new AC();
+      if (audioCtx.state === 'suspended') audioCtx.resume().catch(function () {});
+      return audioCtx;
+    } catch (e) { return null; }
+  }
+
+  function tone(freq, when, dur, vol, type) {
+    const c = ensureAudio();
+    if (!c) return;
+    try {
+      const o = c.createOscillator();
+      const g = c.createGain();
+      o.type = type || 'sine';
+      o.frequency.value = freq;
+      const t = c.currentTime + when;
+      g.gain.setValueAtTime(0.0001, t);
+      g.gain.exponentialRampToValueAtTime(vol || 0.07, t + 0.02);
+      g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+      o.connect(g); g.connect(c.destination);
+      o.start(t); o.stop(t + dur + 0.03);
+    } catch (e) {}
+  }
+
+  function playMessageSound() {
+    tone(1046, 0, 0.09, 0.06);
+    tone(1318, 0.11, 0.14, 0.05);
+  }
+
+  function startCallSound(kind) {
+    stopCallSound();
+    if (!state.soundEnabled) return;
+    const play = function () {
+      if (kind === 'incoming') {
+        tone(700, 0, 0.2, 0.07);
+        tone(880, 0.22, 0.2, 0.065);
+      } else {
+        tone(440, 0, 0.9, 0.045);
+      }
+    };
+    play();
+    callSoundTimer = setInterval(play, kind === 'incoming' ? 1500 : 2400);
+  }
+
+  function stopCallSound() {
+    if (callSoundTimer) { clearInterval(callSoundTimer); callSoundTimer = null; }
+  }
+
+  // 首次触摸时解锁音频，避免浏览器自动播放限制
+  document.addEventListener('pointerdown', function () { if (state.soundEnabled) ensureAudio(); });
+
   function toast(text, opts) {
     opts = opts || {};
     let el = document.querySelector('.toast');
@@ -1374,6 +1441,7 @@ body.theme-mono .tab-item.active svg{color:#141414;}
       quoteProb: state.quoteProb, recallProb: state.recallProb, answerProb: state.answerProb,
       combineProb: state.combineProb, combineMin: state.combineMin, combineMax: state.combineMax,
       captureEnabled: state.captureEnabled,
+      soundEnabled: state.soundEnabled,
       msgWidth: state.msgWidth, avatarSize: state.avatarSize, msgFont: state.msgFont,
       timeColor: state.timeColor, meTextColor: state.meTextColor, charTextColor: state.charTextColor,
       groups: state.groups, cards: state.cards, stickers: state.stickers, chars: state.chars,
@@ -1518,6 +1586,7 @@ body.theme-mono .tab-item.active svg{color:#141414;}
     if (typeof d.combineMin === 'number') state.combineMin = d.combineMin;
     if (typeof d.combineMax === 'number') state.combineMax = d.combineMax;
     if (typeof d.captureEnabled === 'boolean') state.captureEnabled = d.captureEnabled;
+    if (typeof d.soundEnabled === 'boolean') state.soundEnabled = d.soundEnabled;
     if (typeof d.msgWidth === 'number') state.msgWidth = d.msgWidth;
     if (typeof d.avatarSize === 'number') state.avatarSize = d.avatarSize;
     if (typeof d.msgFont === 'number') state.msgFont = d.msgFont;
@@ -1574,6 +1643,7 @@ body.theme-mono .tab-item.active svg{color:#141414;}
     if (!Array.isArray(state.callBgs)) state.callBgs = [];
     if (!Array.isArray(state.fonts)) state.fonts = [];
     if (typeof state.captureEnabled !== 'boolean') state.captureEnabled = true;
+    if (typeof state.soundEnabled !== 'boolean') state.soundEnabled = true;
     if (typeof state.msgWidth !== 'number' || !isFinite(state.msgWidth)) state.msgWidth = 78;
     if (typeof state.avatarSize !== 'number' || !isFinite(state.avatarSize)) state.avatarSize = 36;
     if (typeof state.msgFont !== 'number' || !isFinite(state.msgFont)) state.msgFont = 15;
@@ -1799,6 +1869,7 @@ body.theme-mono .tab-item.active svg{color:#141414;}
     if (state.messages.length > 400) state.messages.splice(0, state.messages.length - 400);
     chatEl.appendChild(buildMessage(msg));
     toBottom();
+    if (role === 'char' && type !== 'call') playMessageSound();
     save();
     return msg;
   }
@@ -2076,13 +2147,13 @@ body.theme-mono .tab-item.active svg{color:#141414;}
     pendingReply = false;
     updateSendState();
 
-    if (Math.random() * 100 < state.callProb) {
-      await sleep(1000);
+    const calledThisTurn = Math.random() * 100 < state.callProb;
+    if (calledThisTurn) {
+      // 这一轮里打电话，但继续把该发的消息发完，不打断回复
       startCall('incoming');
-      return; 
     }
 
-    if (Math.random() * 100 < state.ignoreProb) {
+    if (!calledThisTurn && Math.random() * 100 < state.ignoreProb) {
       await sleep(800);
       busy = false; updateSendState();
       pushMessage('sys', 'note', '已读不回 · 梦角看到了，但暂时没有回复你');
@@ -2260,10 +2331,12 @@ body.theme-mono .tab-item.active svg{color:#141414;}
         }
       }, 3000 + Math.random() * 4000);
     }
+    startCallSound(type);
   }
 
   function answerCall() {
     clearTimeout(callTimer);
+    stopCallSound();
     callState = 'talking';
     callDuration = 0;
     callStatus.textContent = '00:00';
@@ -2366,6 +2439,7 @@ body.theme-mono .tab-item.active svg{color:#141414;}
   function endCall(status, caller) {
     clearTimeout(callTimer);
     clearInterval(callTimer);
+    stopCallSound();
     btnMin.classList.add('hidden');
     callState = 'idle';
     callScreen.classList.remove('show');
@@ -2380,9 +2454,7 @@ body.theme-mono .tab-item.active svg{color:#141414;}
     } else {
        toast('已取消呼叫');
     }
-    
-    busy = false; updateSendState();
-    if (pendingReply) triggerReply();
+    if (pendingReply && !busy) triggerReply();
   }
 
   /* 字卡库渲染 */
@@ -2896,7 +2968,7 @@ body.theme-mono .tab-item.active svg{color:#141414;}
     if (page === 'lib') {
       openLib();
     } else if (page === 'set') {
-      updateIdentity(false); syncThemeButtons(); syncReplySettings(); syncCaptureSwitch();
+      updateIdentity(false); syncThemeButtons(); syncReplySettings(); syncCaptureSwitch(); syncSoundSwitch();
       renderBgPicker('chat'); renderBgPicker('call'); syncAppearanceInputs();
       settings.classList.add('show');
     } else if (page === 'more') {
@@ -3548,6 +3620,19 @@ body.theme-mono .tab-item.active svg{color:#141414;}
     toast(state.captureEnabled ? '已允许梦角截取你的消息' : '已关闭截取，梦角不会再收录你的话');
   });
 
+  /* 提示音开关 */
+  function syncSoundSwitch() {
+    $('swSound').classList.toggle('off', !state.soundEnabled);
+    if (!state.soundEnabled) stopCallSound();
+  }
+  $('swSound').addEventListener('click', function () {
+    state.soundEnabled = !state.soundEnabled;
+    syncSoundSwitch();
+    if (state.soundEnabled) { ensureAudio(); playMessageSound(); }
+    save();
+    toast(state.soundEnabled ? '提示音已开启' : '提示音已关闭');
+  });
+
   $('btnClearChat').addEventListener('click', () => {
     if (!confirm('确定清空所有聊天记录吗？此操作不可恢复。')) return;
     state.messages = [];
@@ -3684,6 +3769,7 @@ body.theme-mono .tab-item.active svg{color:#141414;}
     syncThemeButtons();
     syncReplySettings();
     syncCaptureSwitch();
+    syncSoundSwitch();
     applyAppearance();
     renderBgPicker('chat');
     renderBgPicker('call');
