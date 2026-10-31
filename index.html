@@ -1357,7 +1357,7 @@ body.theme-mono .tab-item.active svg{color:#141414;}
     if (storageWarned) return;
     storageWarned = true;
     setTimeout(function () {
-      toast('⚠️ 当前浏览器拒绝本地存储，进度无法自动保存。请到「设置 → 其他设置」导出完整备份。');
+      toast('⚠️ 本地存储空间不足，图片或头像没能保存。请到「设置 → 美化风格」删除部分背景图，或换个浏览器再试。', { ms: 4200 });
     }, 300);
   }
 
@@ -1372,11 +1372,22 @@ body.theme-mono .tab-item.active svg{color:#141414;}
 
   function save() {
     const data = snapshotData();
-    const ok = writeStore(LS_KEY, data);
+    let sizeKB = 0;
+    try { sizeKB = JSON.stringify(data).length / 1024; } catch (e) {}
+    let ok = writeStore(LS_KEY, data);
+    if (!ok) {
+      // 空间不足时先释放旧备份，再重试主数据
+      try { localStorage.removeItem(LS_BACKUP_KEY); } catch (e) {}
+      ok = writeStore(LS_KEY, data);
+    }
     if (ok) {
-      // 延迟写第二份备份，减少大文件重复写入造成的卡顿
       clearTimeout(backupTimer);
-      backupTimer = setTimeout(function () { writeStore(LS_BACKUP_KEY, data); }, 1000);
+      if (sizeKB < 1200) {
+        // 数据较小才保留第二份自动备份，避免图片把配额占满
+        backupTimer = setTimeout(function () { writeStore(LS_BACKUP_KEY, data); }, 1000);
+      } else {
+        try { localStorage.removeItem(LS_BACKUP_KEY); } catch (e) {}
+      }
     } else {
       storageWarn();
     }
@@ -1506,8 +1517,8 @@ body.theme-mono .tab-item.active svg{color:#141414;}
 
     const known = new Set(state.groups.map(g => g.name));
     state.cards.forEach(c => {
-      if (typeof c.group !== 'string' || !c.group) c.group = '默认';
-      if (!known.has(c.group)) { state.groups.push({ name: c.group, off: false }); known.add(c.group); }
+      if (typeof c.group !== 'string') c.group = '默认';
+      if (c.group && !known.has(c.group)) { state.groups.push({ name: c.group, off: false }); known.add(c.group); }
       if (!c.id) c.id = uid();
     });
 
@@ -2318,11 +2329,14 @@ body.theme-mono .tab-item.active svg{color:#141414;}
   }
 
   function renderTextLib() {
-    // 渲染胶囊
-    let chipsHtml = `<button class="chip ${ui.activeGroup === '全部' ? 'active' : ''}" data-ag="全部">全部</button>`;
-    chipsHtml += `<button class="chip ${ui.activeGroup === '' ? 'active' : ''}" data-ag="">未分组</button>`;
+    // 渲染胶囊（带字卡数量）
+    const totalCards = state.cards.length;
+    const ungrouped = state.cards.filter(c => !c.group).length;
+    let chipsHtml = `<button class="chip ${ui.activeGroup === '全部' ? 'active' : ''}" data-ag="全部">全部 ${totalCards}</button>`;
+    chipsHtml += `<button class="chip ${ui.activeGroup === '' ? 'active' : ''}" data-ag="">未分组 ${ungrouped}</button>`;
     state.groups.forEach(g => {
-       chipsHtml += `<button class="chip ${ui.activeGroup === g.name ? 'active' : ''}" data-ag="${esc(g.name)}">${esc(g.name)}</button>`;
+       const n = state.cards.filter(c => c.group === g.name).length;
+       chipsHtml += `<button class="chip ${ui.activeGroup === g.name ? 'active' : ''}" data-ag="${esc(g.name)}">${esc(g.name)} ${n}</button>`;
     });
     groupChips.innerHTML = chipsHtml;
 
@@ -3134,7 +3148,7 @@ body.theme-mono .tab-item.active svg{color:#141414;}
         const ctx = canvas.getContext('2d');
         ctx.fillStyle = '#ffffff'; ctx.fillRect(0, 0, w, h);
         ctx.drawImage(img, 0, 0, w, h);
-        cb(canvas.toDataURL('image/jpeg', 0.74));
+        cb(canvas.toDataURL('image/jpeg', 0.62));
       };
       img.onerror = function () { cb(null); };
       img.src = reader.result;
@@ -3153,7 +3167,7 @@ body.theme-mono .tab-item.active svg{color:#141414;}
     let pending = picked.length;
     let firstNewId = '';
     picked.forEach(file => {
-      compressImage(file, 1280, function (url) {
+      compressImage(file, 1000, function (url) {
         pending--;
         if (url) {
           const id = 'bg' + Date.now().toString(36) + Math.random().toString(36).slice(2, 5);
