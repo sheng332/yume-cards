@@ -987,6 +987,7 @@ body.theme-mono .tab-item.active svg{color:#141414;}
     <div class="lib-actions" id="emojiActions">
       <button class="chip" data-eact="manage">管理</button>
       <button class="chip" data-eact="upload">上传表情包</button>
+      <button class="chip" data-eact="uploadjson">导入字卡库 JSON</button>
       <button class="chip" data-eact="delete">删除选中</button>
     </div>
   </div>
@@ -1104,11 +1105,13 @@ body.theme-mono .tab-item.active svg{color:#141414;}
         </div>
 
         <div class="field">
-          <span>气泡自定义 CSS</span>
-          <textarea class="custom-ta" id="bubbleCssInput" placeholder="例如：&#10;.msg.me .bubble{background:#111;color:#fff;}"></textarea>
+          <span>气泡自定义 CSS（可保存多套，点选切换）</span>
+          <div class="lib-actions" id="bubblePresetList" style="margin:4px 0 8px;"></div>
+          <textarea class="custom-ta" id="bubbleCssInput" placeholder="例如：&#10;.msg.me .bubble{background:#111;color:#fff;}&#10;也支持 .msg-out .msg-bubble / .msg-in .msg-bubble 写法"></textarea>
           <div class="lib-actions" style="margin:8px 0 0;">
-            <button class="chip" id="btnApplyBubbleCss">应用 CSS</button>
-            <button class="chip" id="btnImportBubbleCss">导入 .css 文件</button>
+            <button class="chip" id="btnApplyBubbleCss">应用当前 CSS</button>
+            <button class="chip" id="btnImportBubbleCss">导入 .css 并命名</button>
+            <button class="chip" id="btnDelBubbleCss">删除当前样式</button>
             <button class="chip" id="btnResetBubbleCss">恢复默认</button>
           </div>
         </div>
@@ -1253,6 +1256,7 @@ body.theme-mono .tab-item.active svg{color:#141414;}
 <input type="file" id="avatarInput" accept="image/*" hidden>
 <input type="file" id="userAvatarInput" accept="image/*" hidden>
 <input type="file" id="emojiUploadInput" accept="image/*" multiple hidden>
+<input type="file" id="emojiJsonInput" accept=".json,application/json" hidden>
 <input type="file" id="dataImportInput" accept=".json,application/json" hidden>
 <input type="file" id="chatBgInput" accept="image/*" multiple hidden>
 <input type="file" id="callBgInput" accept="image/*" multiple hidden>
@@ -1269,6 +1273,7 @@ body.theme-mono .tab-item.active svg{color:#141414;}
   const LS_BACKUP_KEY = 'yume_cards_backup';
   const IDB_STATE_KEY = 'state_main';
   const IDB_STATE_BAK = 'state_backup';
+  const STICKER_KEY = 'sticker_data';
   let migratedFromKey = '';
 
   const state = {
@@ -1282,6 +1287,8 @@ body.theme-mono .tab-item.active svg{color:#141414;}
     chatBgId: '',
     callBgId: '',
     bubbleCss: '',
+    bubblePresets: [],
+    bubbleId: '',
     fonts: [],
     fontId: '',
     minDelay: 600,
@@ -1426,14 +1433,15 @@ body.theme-mono .tab-item.active svg{color:#141414;}
   let backupTimer = null;
   let storageWarned = false;
 
-  function snapshotData() {
+  function snapshotData(lite) {
     return {
       savedAt: Date.now(),
       userName: state.userName, charName: state.charName,
       avatar: state.avatar, userAvatar: state.userAvatar, theme: state.theme,
       chatBgs: state.chatBgs, callBgs: state.callBgs,
       chatBgId: state.chatBgId, callBgId: state.callBgId,
-      bubbleCss: state.bubbleCss, fonts: state.fonts, fontId: state.fontId,
+      bubbleCss: state.bubbleCss, bubblePresets: state.bubblePresets, bubbleId: state.bubbleId,
+      fontId: state.fontId, fonts: state.fonts,
       minDelay: state.minDelay, maxDelay: state.maxDelay,
       minReply: state.minReply, maxReply: state.maxReply,
       ignoreProb: state.ignoreProb, emojiProb: state.emojiProb,
@@ -1444,7 +1452,9 @@ body.theme-mono .tab-item.active svg{color:#141414;}
       soundEnabled: state.soundEnabled,
       msgWidth: state.msgWidth, avatarSize: state.avatarSize, msgFont: state.msgFont,
       timeColor: state.timeColor, meTextColor: state.meTextColor, charTextColor: state.charTextColor,
-      groups: state.groups, cards: state.cards, stickers: state.stickers, chars: state.chars,
+      groups: state.groups, cards: state.cards,
+      stickers: lite ? state.stickers.map(s => ({ id: s.id })) : state.stickers,
+      chars: state.chars,
       messages: state.messages.slice(-400), lastId: state.lastId,
       songs: state.songs.map(function (s) { return { id: s.id, name: s.name, artist: s.artist, cover: s.cover, url: s.url || '' }; }),
       songIdx: state.songIdx
@@ -1506,7 +1516,7 @@ body.theme-mono .tab-item.active svg{color:#141414;}
   }
 
   function save() {
-    const data = snapshotData();
+    const data = snapshotData(true);
     // 优先存进 IndexedDB：容量大，图片可以保留清晰度，不受 localStorage 5MB 限制
     if (window.indexedDB) {
       try {
@@ -1515,17 +1525,27 @@ body.theme-mono .tab-item.active svg{color:#141414;}
           backupTimer = setTimeout(function () {
             idbPut(IDB_STATE_BAK, data).catch(function () {});
           }, 1000);
-        }).catch(function () { saveLocal(data); });
+        }).catch(function () { saveLocal(snapshotData(false)); });
         return true;
       } catch (e) { /* 落到 localStorage */ }
     }
-    return saveLocal(data);
+    return saveLocal(snapshotData(false));
+  }
+
+  // 表情包图片较大，单独存一份，避免每次聊天都把十几 MB 重新写一遍
+  function saveStickers() {
+    if (!window.indexedDB) return;
+    try { idbPut(STICKER_KEY, state.stickers).catch(function () {}); } catch (e) {}
   }
 
   function loadFromIDB() {
     if (!window.indexedDB) return Promise.resolve(null);
     return idbGet(IDB_STATE_KEY).then(function (d) {
-      return d || idbGet(IDB_STATE_BAK);
+      return d ? d : idbGet(IDB_STATE_BAK);
+    }).then(function (d) {
+      return idbGet(STICKER_KEY).then(function (stickers) {
+        return { state: d, stickers: stickers };
+      }).catch(function () { return { state: d, stickers: null }; });
     }).catch(function () { return null; });
   }
 
@@ -1569,6 +1589,8 @@ body.theme-mono .tab-item.active svg{color:#141414;}
     if (typeof d.chatBgId === 'string') state.chatBgId = d.chatBgId;
     if (typeof d.callBgId === 'string') state.callBgId = d.callBgId;
     if (typeof d.bubbleCss === 'string') state.bubbleCss = d.bubbleCss;
+    if (Array.isArray(d.bubblePresets)) state.bubblePresets = d.bubblePresets.filter(p => p && typeof p.css === 'string').map(p => ({ id: String(p.id || uid()), name: String(p.name || '未命名样式'), css: p.css }));
+    if (typeof d.bubbleId === 'string') state.bubbleId = d.bubbleId;
     if (Array.isArray(d.fonts)) state.fonts = d.fonts;
     if (typeof d.fontId === 'string') state.fontId = d.fontId;
     if (typeof d.minDelay === 'number') state.minDelay = d.minDelay;
@@ -1643,6 +1665,21 @@ body.theme-mono .tab-item.active svg{color:#141414;}
     if (!Array.isArray(state.callBgs)) state.callBgs = [];
     if (!Array.isArray(state.fonts)) state.fonts = [];
     if (typeof state.captureEnabled !== 'boolean') state.captureEnabled = true;
+    if (!Array.isArray(state.bubblePresets)) state.bubblePresets = [];
+    if (typeof state.bubbleId !== 'string') state.bubbleId = '';
+    if (state.bubbleCss && !state.bubblePresets.length) {
+      const id = 'b' + Date.now().toString(36);
+      state.bubblePresets.push({ id: id, name: '已保存的样式', css: state.bubbleCss });
+      state.bubbleId = id;
+    }
+    if (state.bubbleId && !state.bubblePresets.some(p => p.id === state.bubbleId)) {
+      state.bubbleId = '';
+      state.bubbleCss = '';
+    }
+    if (state.bubbleId) {
+      const cur = state.bubblePresets.find(p => p.id === state.bubbleId);
+      if (cur) state.bubbleCss = cur.css;
+    }
     if (typeof state.soundEnabled !== 'boolean') state.soundEnabled = true;
     if (typeof state.msgWidth !== 'number' || !isFinite(state.msgWidth)) state.msgWidth = 78;
     if (typeof state.avatarSize !== 'number' || !isFinite(state.avatarSize)) state.avatarSize = 36;
@@ -1754,7 +1791,7 @@ body.theme-mono .tab-item.active svg{color:#141414;}
       return note;
     }
     const wrap = document.createElement('div');
-    wrap.className = 'msg ' + msg.role;
+    wrap.className = 'msg ' + msg.role + (msg.role === 'char' ? ' msg-in' : ' msg-out');
     wrap.id = 'msg-' + msg.id;
     
     const av = document.createElement('div');
@@ -1819,10 +1856,10 @@ body.theme-mono .tab-item.active svg{color:#141414;}
       const iconCls = msg.callStatus === 'answered' ? 'icon green' : 'icon';
       bubble.innerHTML = `<div class="${iconCls}">${iconSvg}</div><div class="info"><b>${title}</b><span>${desc}</span></div>`;
     } else if (msg.type === 'emoji') {
-      bubble.className = 'bubble';
+      bubble.className = 'bubble msg-bubble';
       bubble.innerHTML = `<img src="${msg.content}" alt="表情包">`;
     } else {
-      bubble.className = 'bubble';
+      bubble.className = 'bubble msg-bubble';
       
       if (msg.quote) {
         const qBox = document.createElement('div');
@@ -1868,6 +1905,7 @@ body.theme-mono .tab-item.active svg{color:#141414;}
     state.messages.push(msg);
     if (state.messages.length > 400) state.messages.splice(0, state.messages.length - 400);
     chatEl.appendChild(buildMessage(msg));
+    if (typingEl) chatEl.appendChild(typingEl);
     toBottom();
     if (role === 'char' && type !== 'call') playMessageSound();
     save();
@@ -2096,7 +2134,7 @@ body.theme-mono .tab-item.active svg{color:#141414;}
   let replyTimer = null;
   let pendingReply = false;
 
-  function updateSendState() { btnSend.disabled = busy || !input.value.trim(); }
+  function updateSendState() { btnSend.disabled = !input.value.trim(); }
 
   /* 梦角截取我的消息：概率由系统固定，不对外暴露 */
   const CAPTURE_PROB = 25;
@@ -2175,10 +2213,11 @@ body.theme-mono .tab-item.active svg{color:#141414;}
     const count = Math.floor(Math.random() * (state.maxReply - state.minReply + 1)) + state.minReply;
 
     for (let i = 0; i < count; i++) {
-      if (i > 0) await sleep(300 + Math.random() * 400);
-      
+      const wait = i === 0
+        ? state.minDelay + Math.random() * (state.maxDelay - state.minDelay)
+        : 3000;
       showTyping();
-      await sleep(state.minDelay + Math.random() * (state.maxDelay - state.minDelay));
+      await sleep(wait);
       hideTyping();
 
       let sendSticker = false;
@@ -2645,7 +2684,7 @@ body.theme-mono .tab-item.active svg{color:#141414;}
     } else if (b.dataset.eact === 'batchdel') {
       if (!confirm('确定删除选中的 ' + ui.emojiSel.size + ' 个表情包吗？')) return;
       state.stickers = state.stickers.filter(em => !ui.emojiSel.has(em.id));
-      ui.emojiSel.clear(); save(); renderStickerLib();
+      ui.emojiSel.clear(); saveStickers(); save(); renderStickerLib();
     } else if (b.dataset.cact === 'batchdel') {
       if (!confirm('确定删除选中的 ' + ui.charSel.size + ' 个 Emoji 吗？')) return;
       state.chars = state.chars.filter(ch => !ui.charSel.has(ch));
@@ -2682,6 +2721,7 @@ body.theme-mono .tab-item.active svg{color:#141414;}
       ui.emojiManage = !ui.emojiManage; if (!ui.emojiManage) ui.emojiSel.clear();
       b.classList.toggle('active', ui.emojiManage); renderStickerLib();
     } else if (act === 'upload') { $('emojiUploadInput').click(); }
+    else if (act === 'uploadjson') { $('emojiJsonInput').click(); }
   });
 
   $('charActions').addEventListener('click', function (e) {
@@ -2714,12 +2754,56 @@ body.theme-mono .tab-item.active svg{color:#141414;}
           canvas.getContext('2d').drawImage(img, 0, 0, w, h);
           state.stickers.push({ id: uid(), url: canvas.toDataURL('image/png') });
           loaded++;
-          if (loaded === files.length) { save(); renderStickerLib(); toast('成功导入 ' + files.length + ' 个表情包'); }
+          if (loaded === files.length) { saveStickers(); save(); renderStickerLib(); toast('成功导入 ' + files.length + ' 个表情包'); }
         };
         img.src = reader.result;
       };
       reader.readAsDataURL(f);
     });
+    e.target.value = '';
+  });
+
+  function collectStickerImages(data) {
+    const out = [];
+    const walk = function (o) {
+      if (typeof o === 'string') {
+        if (/^data:image\//.test(o)) out.push(o);
+      } else if (Array.isArray(o)) {
+        o.forEach(walk);
+      } else if (o && typeof o === 'object') {
+        if (typeof o.url === 'string' && /^data:image\//.test(o.url)) out.push(o.url);
+        Object.keys(o).forEach(function (k) { walk(o[k]); });
+      }
+    };
+    walk(data);
+    return out;
+  }
+
+  $('emojiJsonInput').addEventListener('change', function (e) {
+    const f = e.target.files && e.target.files[0];
+    if (!f) return;
+    if (f.size > 60 * 1024 * 1024) { toast('文件太大，建议 60MB 以内'); e.target.value = ''; return; }
+    const reader = new FileReader();
+    reader.onload = function () {
+      try {
+        const data = JSON.parse(reader.result);
+        const urls = collectStickerImages(data);
+        if (!urls.length) { toast('没有找到表情包图片'); return; }
+        const existing = new Set(state.stickers.map(s => s.url));
+        let added = 0;
+        urls.forEach(function (url) {
+          if (existing.has(url)) return;
+          existing.add(url);
+          state.stickers.push({ id: uid(), url: url });
+          added++;
+        });
+        saveStickers(); save(); renderStickerLib();
+        toast('成功导入 ' + added + ' 个表情包' + (added < urls.length ? '（已跳过重复）' : ''));
+      } catch (err) {
+        toast('导入失败：JSON 文件损坏或格式不支持');
+      }
+    };
+    reader.readAsText(f, 'utf-8');
     e.target.value = '';
   });
 
@@ -3454,6 +3538,7 @@ body.theme-mono .tab-item.active svg{color:#141414;}
     $('setTimeColor').value = state.timeColor || '#8e8e93';
     $('setMeTextColor').value = state.meTextColor || '#ffffff';
     $('setCharTextColor').value = state.charTextColor || '#191919';
+    renderBubblePresets();
     renderFontList();
   }
 
@@ -3495,14 +3580,76 @@ body.theme-mono .tab-item.active svg{color:#141414;}
     e.target.value = '';
   });
 
+  function renderBubblePresets() {
+    const list = $('bubblePresetList');
+    if (!list) return;
+    let html = '<button class="chip' + (!state.bubbleId ? ' active' : '') + '" data-bp="">默认</button>';
+    state.bubblePresets.forEach(p => {
+      html += '<button class="chip' + (state.bubbleId === p.id ? ' active' : '') + '" data-bp="' + p.id + '">' + esc(p.name) + '</button>';
+    });
+    list.innerHTML = html;
+  }
+
+  function useBubblePreset(id) {
+    state.bubbleId = id || '';
+    const p = state.bubblePresets.find(x => x.id === id);
+    state.bubbleCss = p ? p.css : '';
+    $('bubbleCssInput').value = state.bubbleCss;
+    applyBubbleCss(); renderBubblePresets(); save();
+  }
+
+  function saveBubblePreset(css, defaultName) {
+    const name = (prompt('给这个气泡样式取个名字：', defaultName || '我的气泡') || '').trim();
+    if (!name) return false;
+    let p = state.bubblePresets.find(x => x.name === name);
+    if (p) { p.css = css; }
+    else {
+      p = { id: 'b' + Date.now().toString(36), name: name, css: css };
+      state.bubblePresets.push(p);
+    }
+    state.bubbleId = p.id;
+    state.bubbleCss = css;
+    $('bubbleCssInput').value = css;
+    applyBubbleCss(); renderBubblePresets(); save();
+    return true;
+  }
+
+  $('bubblePresetList').addEventListener('click', (e) => {
+    const b = e.target.closest('[data-bp]');
+    if (!b) return;
+    useBubblePreset(b.dataset.bp);
+    toast(b.dataset.bp ? '已切换气泡样式' : '已恢复默认气泡样式');
+  });
+
   $('btnApplyBubbleCss').addEventListener('click', () => {
-    state.bubbleCss = $('bubbleCssInput').value;
-    applyBubbleCss(); save(); toast('气泡 CSS 已应用');
+    const css = $('bubbleCssInput').value;
+    if (!css.trim()) { toast('CSS 是空的'); return; }
+    if (state.bubbleId) {
+      const p = state.bubblePresets.find(x => x.id === state.bubbleId);
+      if (p) p.css = css;
+      state.bubbleCss = css;
+      applyBubbleCss(); renderBubblePresets(); save();
+      toast('已更新并应用「' + (p ? p.name : '当前样式') + '」');
+    } else {
+      if (!saveBubblePreset(css, '我的气泡')) return;
+      toast('已保存并应用气泡样式');
+    }
+  });
+  $('btnDelBubbleCss').addEventListener('click', () => {
+    if (!state.bubbleId) { toast('当前是默认样式，没有可删除的自定义样式'); return; }
+    const p = state.bubblePresets.find(x => x.id === state.bubbleId);
+    if (!confirm('删除气泡样式「' + (p ? p.name : '') + '」？')) return;
+    state.bubblePresets = state.bubblePresets.filter(x => x.id !== state.bubbleId);
+    state.bubbleId = ''; state.bubbleCss = '';
+    $('bubbleCssInput').value = '';
+    applyBubbleCss(); renderBubblePresets(); save();
+    toast('已删除该气泡样式');
   });
   $('btnResetBubbleCss').addEventListener('click', () => {
+    state.bubbleId = '';
     state.bubbleCss = '';
     $('bubbleCssInput').value = '';
-    applyBubbleCss(); save(); toast('已恢复默认气泡样式');
+    applyBubbleCss(); renderBubblePresets(); save(); toast('已恢复默认气泡样式');
   });
   $('btnImportBubbleCss').addEventListener('click', () => $('cssInput').click());
   $('cssInput').addEventListener('change', function (e) {
@@ -3510,9 +3657,10 @@ body.theme-mono .tab-item.active svg{color:#141414;}
     if (!f) return;
     const reader = new FileReader();
     reader.onload = function () {
-      state.bubbleCss = String(reader.result || '');
-      $('bubbleCssInput').value = state.bubbleCss;
-      applyBubbleCss(); save(); toast('已导入气泡 CSS');
+      const css = String(reader.result || '');
+      const defaultName = f.name.replace(/\.[^.]+$/, '') || '导入的气泡';
+      if (!saveBubblePreset(css, defaultName)) return;
+      toast('已导入并应用气泡样式');
     };
     reader.readAsText(f, 'utf-8');
     e.target.value = '';
@@ -3684,6 +3832,7 @@ body.theme-mono .tab-item.active svg{color:#141414;}
         chatEl.innerHTML = '';
         state.messages.forEach(m => chatEl.appendChild(buildMessage(m)));
         toBottom(false);
+        saveStickers();
         save();
         toast('数据恢复成功！');
         closeAll();
@@ -3742,7 +3891,7 @@ body.theme-mono .tab-item.active svg{color:#141414;}
   $('modalClose').addEventListener('click', closeModal);
 
   /* 初始化启动 */
-  function boot(fromIdb) {
+  function boot(fromIdb, stickerData) {
     let source = fromIdb;
     // 万一上一次 IndexedDB 写入失败、localStorage 反而是新的，则用较新的那份
     try {
@@ -3761,6 +3910,11 @@ body.theme-mono .tab-item.active svg{color:#141414;}
     }
     
     normalize();
+    if (Array.isArray(stickerData) && stickerData.length) {
+      state.stickers = stickerData.map(function (s) { return { id: s.id, url: s.url }; });
+    } else {
+      saveStickers();
+    }
     // 统一写回固定键，确保迁移后的数据落地
     save();
     
@@ -3793,9 +3947,11 @@ body.theme-mono .tab-item.active svg{color:#141414;}
 
   // 优先使用 IndexedDB 里的大容量数据；没有时回退到旧版 localStorage 数据
   if (window.indexedDB) {
-    loadFromIDB().then(boot).catch(function () { boot(null); });
+    loadFromIDB().then(function (r) {
+      boot(r ? r.state : null, r ? r.stickers : null);
+    }).catch(function () { boot(null, null); });
   } else {
-    boot(null);
+    boot(null, null);
   }
 
   // 页面被切到后台/关闭前再存一次，避免移动端直接杀进程导致最后一条丢失
