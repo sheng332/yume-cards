@@ -923,89 +923,119 @@ body.theme-mono .tab-item.active svg{color:#141414;}
 
 /* ===================== 主页（手机桌面） ===================== */
 .home-page{padding:0;overflow:hidden;}
-/* 我的资料卡 */
+/* 我的资料卡：封面 + 居中头像 + 名字 + 个签 */
 .home-profile{
+  --hp-ring:#ffffff;
   position:relative;isolation:isolate;overflow:hidden;flex:none;
-  display:flex;flex-direction:column;align-items:center;gap:6px;
-  margin-bottom:24px;padding:24px 20px 20px;border-radius:28px;
-  background:linear-gradient(168deg,rgba(255,255,255,.92),rgba(255,255,255,.62));
-  border:1px solid var(--glass-line);
-  box-shadow:0 18px 40px rgba(52,74,110,.13), inset 0 1px 0 rgba(255,255,255,.85);
-  -webkit-backdrop-filter:blur(16px) saturate(1.35);
-  backdrop-filter:blur(16px) saturate(1.35);
+  display:flex;flex-direction:column;align-items:center;
+  margin-bottom:24px;padding:0 20px 23px;border-radius:30px;
+  background:linear-gradient(176deg,#fffdfb 0%,#fdf6f8 46%,#f3faf6 100%);
+  border:1px solid rgba(255,255,255,.82);
+  box-shadow:0 22px 48px rgba(52,74,110,.15), 0 2px 6px rgba(52,74,110,.05), inset 0 1px 0 #fff;
 }
-.home-profile::before{
-  content:'';position:absolute;inset:0;z-index:-1;pointer-events:none;
+.hp-cover{
+  position:relative;width:calc(100% + 40px);height:126px;margin:0 -20px;
+  overflow:hidden;
   background:
-    radial-gradient(62% 58% at 16% 8%, var(--accent) 0%, transparent 62%),
-    radial-gradient(56% 52% at 92% 12%, #ff9ec7 0%, transparent 66%),
-    radial-gradient(52% 48% at 72% 96%, #8fd9c4 0%, transparent 68%);
-  opacity:.20;
+    radial-gradient(78% 120% at 8% 0%, #ffe0ed 0%, rgba(255,224,237,0) 62%),
+    radial-gradient(70% 110% at 94% 4%, #d8f1e5 0%, rgba(216,241,229,0) 68%),
+    radial-gradient(92% 130% at 52% 108%, #fff3e1 0%, rgba(255,243,225,0) 72%),
+    linear-gradient(138deg,#fdf9f5,#f6ecf4 46%,#e8f6ef);
 }
-.home-profile::after{
-  content:'';position:absolute;left:16%;right:16%;top:0;height:1px;z-index:-1;
-  background:linear-gradient(90deg,transparent,rgba(255,255,255,.9),transparent);
+.hp-cover::before{
+  content:'';position:absolute;inset:0;pointer-events:none;
+  background-image:url("data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20width='180'%20height='180'%20fill='none'%20stroke='%23ffffff'%20stroke-width='1.2'%20stroke-linecap='round'%3E%3Cpath%20d='M24%20150c14-10%2022-26%2024-46'/%3E%3Cpath%20d='M48%20104c-9-1-15-8-18-18%209-1%2015%205%2018%2018z'/%3E%3Cpath%20d='M48%20104c8-7%2011-16%209-26-9%204-12%2013-9%2026z'/%3E%3Cpath%20d='M132%2034c10%205%2015%2016%2016%2030'/%3E%3Cpath%20d='M148%2064c-8%200-14-5-17-13%207-2%2013%203%2017%2013z'/%3E%3Ccircle%20cx='96'%20cy='48'%20r='2'/%3E%3Ccircle%20cx='36'%20cy='36'%20r='1.6'/%3E%3Ccircle%20cx='158'%20cy='128'%20r='1.8'/%3E%3C/svg%3E");
+  background-size:180px 180px;opacity:.62;
+}
+.hp-cover::after{
+  content:'';position:absolute;left:0;right:0;bottom:0;height:64px;
+  background:linear-gradient(180deg,rgba(255,255,255,0),rgba(255,250,250,.72));
+}
+.hp-body{
+  position:relative;z-index:1;display:flex;flex-direction:column;align-items:center;gap:5px;
+  width:100%;margin-top:-47px;padding:0 6px;
 }
 .hp-avatar{
-  position:relative;flex:none;width:80px;height:80px;margin-bottom:3px;
+  position:relative;flex:none;width:88px;height:88px;
   padding:0;border:none;border-radius:50%;background:transparent;cursor:pointer;
 }
 .hp-avatar-inner{
-  display:grid;place-items:center;width:80px;height:80px;border-radius:50%;overflow:hidden;
-  background:linear-gradient(158deg,#ffffff,#ffe6f1);
-  box-shadow:0 10px 26px rgba(0,0,0,.17), 0 0 0 4px rgba(255,255,255,.78), 0 0 0 5.5px var(--glass-line);
+  display:grid;place-items:center;width:88px;height:88px;border-radius:50%;overflow:hidden;
+  background:linear-gradient(158deg,#ffffff,#ffe8f2);
+  box-shadow:0 14px 30px rgba(90,60,80,.20), 0 0 0 6px var(--hp-ring), 0 0 0 7px rgba(255,255,255,.38);
   transition:transform .16s ease;
 }
 .hp-avatar:active .hp-avatar-inner{transform:scale(.94);}
 .hp-avatar-inner img{width:100%;height:100%;object-fit:cover;display:block;}
 .hp-avatar-inner img[hidden]{display:none;}
-.hp-avatar-inner span{font-size:28px;font-weight:600;color:var(--accent);line-height:1;}
+.hp-avatar-inner span{font-size:30px;font-weight:600;color:var(--accent);line-height:1;}
 .hp-avatar-inner span[hidden]{display:none;}
 .hp-cam{
-  position:absolute;right:-2px;bottom:-2px;width:26px;height:26px;border-radius:50%;
+  position:absolute;right:-1px;bottom:-1px;width:27px;height:27px;border-radius:50%;
   display:grid;place-items:center;font-style:normal;
   background:var(--accent);color:var(--accent-contrast);
-  border:2.5px solid var(--app-bg);box-shadow:0 4px 10px rgba(0,0,0,.2);
+  border:2.5px solid var(--hp-ring);box-shadow:0 5px 12px rgba(0,0,0,.22);
 }
 .hp-cam svg{width:13px;height:13px;}
 .hp-name{
-  font-size:18px;font-weight:700;letter-spacing:.5px;color:var(--text);
+  margin-top:3px;font-size:19px;font-weight:700;letter-spacing:.6px;color:var(--text);
   cursor:pointer;
 }
 .hp-sign{
-  max-width:86%;padding:0 6px;text-align:center;
-  font-size:12px;line-height:1.65;color:var(--muted);
+  max-width:88%;padding:0 6px;text-align:center;
+  font-size:12px;line-height:1.7;color:var(--muted);
   white-space:pre-wrap;word-break:break-word;cursor:pointer;
 }
 .hp-sign.empty{opacity:.6;font-style:italic;}
 .hp-edit{
-  position:absolute;top:12px;right:12px;padding:5px 11px;border-radius:99px;
-  border:1px solid var(--glass-line);background:var(--glass);color:var(--muted);
+  position:absolute;z-index:3;top:12px;right:12px;padding:5px 12px;border-radius:99px;
+  border:1px solid rgba(255,255,255,.88);background:rgba(255,255,255,.64);color:#7d6f7c;
   font-size:11px;letter-spacing:.2px;cursor:pointer;
-  -webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px);
+  box-shadow:0 6px 16px rgba(80,60,80,.12);
+  -webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px);
 }
 .hp-edit:active{transform:scale(.96);}
 body.theme-cute .home-profile{
-  background:linear-gradient(168deg,rgba(255,250,252,.94),rgba(255,241,246,.66));
-  box-shadow:0 18px 40px rgba(214,120,160,.16), inset 0 1px 0 rgba(255,255,255,.9);
+  background:linear-gradient(176deg,#fffbfd 0%,#fff3f8 46%,#fbf7ff 100%);
+  box-shadow:0 22px 48px rgba(214,120,160,.17), 0 2px 6px rgba(214,120,160,.06), inset 0 1px 0 #fff;
+}
+body.theme-cute .hp-cover{
+  background:
+    radial-gradient(78% 120% at 8% 0%, #ffe1ee 0%, rgba(255,225,238,0) 62%),
+    radial-gradient(70% 110% at 94% 4%, #f6dcff 0%, rgba(246,220,255,0) 68%),
+    radial-gradient(92% 130% at 52% 108%, #fff0e6 0%, rgba(255,240,230,0) 72%),
+    linear-gradient(138deg,#fff7fb,#fcecf5 46%,#f4f0ff);
 }
 body.theme-night .home-profile{
-  background:linear-gradient(168deg,rgba(48,48,52,.9),rgba(28,28,32,.6));
+  --hp-ring:#2c2c31;
+  background:linear-gradient(176deg,#313137 0%,#29292f 46%,#232328 100%);
   border-color:rgba(255,255,255,.08);
-  box-shadow:0 18px 40px rgba(0,0,0,.45), inset 0 1px 0 rgba(255,255,255,.07);
+  box-shadow:0 22px 48px rgba(0,0,0,.48), inset 0 1px 0 rgba(255,255,255,.07);
 }
-body.theme-night .home-profile::before{opacity:.3;}
-body.theme-night .home-profile::after{background:linear-gradient(90deg,transparent,rgba(255,255,255,.18),transparent);}
-body.theme-night .hp-avatar-inner{
-  background:linear-gradient(158deg,#34343a,#3d2b35);
-  box-shadow:0 10px 26px rgba(0,0,0,.5), 0 0 0 4px rgba(32,32,36,.82), 0 0 0 5.5px rgba(255,255,255,.1);
-}
-body.theme-mono .home-profile::before{
+body.theme-night .hp-cover{
   background:
-    radial-gradient(62% 58% at 16% 8%, #c9c9c9 0%, transparent 62%),
-    radial-gradient(56% 52% at 92% 12%, #dedede 0%, transparent 66%);
-  opacity:.42;
+    radial-gradient(78% 120% at 8% 0%, #4a3040 0%, rgba(74,48,64,0) 62%),
+    radial-gradient(70% 110% at 94% 4%, #2c443c 0%, rgba(44,68,60,0) 68%),
+    radial-gradient(92% 130% at 52% 108%, #463b2c 0%, rgba(70,59,44,0) 72%),
+    linear-gradient(138deg,#34343a,#302b34 46%,#26312c);
 }
+body.theme-night .hp-cover::before{opacity:.2;}
+body.theme-night .hp-cover::after{background:linear-gradient(180deg,rgba(45,45,50,0),rgba(45,45,50,.78));}
+body.theme-night .hp-avatar-inner{
+  background:linear-gradient(158deg,#36363d,#3e2b36);
+  box-shadow:0 14px 30px rgba(0,0,0,.55), 0 0 0 6px var(--hp-ring), 0 0 0 7px rgba(255,255,255,.08);
+}
+body.theme-night .hp-edit{
+  background:rgba(255,255,255,.14);border-color:rgba(255,255,255,.18);color:#cfc7d0;
+}
+body.theme-mono .hp-cover{
+  background:
+    radial-gradient(78% 120% at 8% 0%, #ececec 0%, rgba(236,236,236,0) 62%),
+    radial-gradient(70% 110% at 94% 4%, #dedede 0%, rgba(222,222,222,0) 68%),
+    linear-gradient(138deg,#f8f8f8,#efefef 46%,#e7e7e7);
+}
+body.theme-mono .hp-cover::before{opacity:.4;}
+body.theme-mono .hp-edit{color:#6f6f6f;}
 .home-bg{position:absolute;inset:0;pointer-events:none;overflow:hidden;}
 .home-bg i{position:absolute;border-radius:50%;background:var(--accent);opacity:.13;filter:blur(48px);}
 .home-bg i:nth-child(1){width:200px;height:200px;top:-56px;right:-40px;opacity:.16;}
@@ -1848,18 +1878,21 @@ body.theme-night .glyph-music{background:linear-gradient(160deg,#4a2338,#3a1b2c)
   <div class="home-bg" aria-hidden="true"><i></i><i></i><i></i></div>
   <div class="home-scroll">
     <section class="home-profile" id="homeProfile">
-      <button class="hp-avatar" id="homeAvatarBtn" type="button" aria-label="更换我的头像">
-        <span class="hp-avatar-inner">
-          <img id="homeAvatarImg" alt="" hidden>
-          <span id="homeAvatarLetter">我</span>
-        </span>
-        <em class="hp-cam" aria-hidden="true">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
-        </em>
-      </button>
-      <b class="hp-name" id="homeName">我</b>
-      <span class="hp-sign empty" id="homeSign">点这里写一句个签</span>
+      <div class="hp-cover" aria-hidden="true"></div>
       <button class="hp-edit" id="homeProfileEdit" type="button">编辑</button>
+      <div class="hp-body">
+        <button class="hp-avatar" id="homeAvatarBtn" type="button" aria-label="更换我的头像">
+          <span class="hp-avatar-inner">
+            <img id="homeAvatarImg" alt="" hidden>
+            <span id="homeAvatarLetter">我</span>
+          </span>
+          <em class="hp-cam" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+          </em>
+        </button>
+        <b class="hp-name" id="homeName">我</b>
+        <span class="hp-sign empty" id="homeSign">点这里写一句个签</span>
+      </div>
     </section>
     <input type="file" id="homeAvatarInput" accept="image/*" hidden>
 
