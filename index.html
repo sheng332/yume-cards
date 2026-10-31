@@ -3685,7 +3685,11 @@ body.theme-mono .tab-item.active svg{color:#141414;}
       e.target.value = '';
       return;
     }
-    const name = f.name.replace(/\.[^.]+$/, '');
+    let name = f.name.replace(/\.[^.]+$/, '');
+    try {
+      const custom = (window.prompt('给这个字体取个名字：', name) || '').trim();
+      if (custom) name = custom;
+    } catch (err) {}
     const id = 'f' + Date.now().toString(36);
     const reader = new FileReader();
     reader.onload = async function () {
