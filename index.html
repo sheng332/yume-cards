@@ -115,8 +115,8 @@ input,textarea{font-family:inherit;}
 
 /* ===================== 顶栏（居中头像 + 磨砂玻璃） ===================== */
 .header{
-  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;
-  padding:10px 12px 12px;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;
+  padding:6px 12px 8px;
   border-bottom:1px solid var(--line);
   background:var(--glass);
   -webkit-backdrop-filter:blur(20px) saturate(1.6);
@@ -128,13 +128,13 @@ input,textarea{font-family:inherit;}
   min-width:0;text-align:center;
 }
 .header .avatar{
-  width:46px;height:46px;font-size:17px;margin-bottom:3px;
+  width:34px;height:34px;font-size:13px;margin-bottom:1px;
 }
 .head-name{
-  max-width:100%;font-size:15.5px;font-weight:600;letter-spacing:.2px;
+  max-width:100%;font-size:14.5px;font-weight:600;letter-spacing:.2px;
   overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
 }
-.header .status{justify-content:center;font-size:11px;}
+.header .status{justify-content:center;font-size:10px;}
 .avatar{
   width:42px;height:42px;border-radius:50%;flex:none;
   display:grid;place-items:center;
@@ -439,6 +439,7 @@ body.theme-mono .quote-box{border-left-color:#141414;}
 .call-btn svg{width:28px;height:28px;}
 .call-btn.red{background:var(--call-btn-red);box-shadow:0 6px 20px rgba(255,59,48,.4);}
 .call-btn.green{background:var(--call-btn-green);box-shadow:0 6px 20px rgba(52,199,89,.4);}
+.call-btn.grey{background:rgba(255,255,255,.18);box-shadow:none;}
 .call-btn.hidden{display:none;}
 
 /* 悬浮通话胶囊 */
@@ -510,13 +511,14 @@ body.theme-mono .tab-item.active svg{color:#141414;}
 
 .drawer-scroll{
   flex:1;overflow-y:auto;min-height:0;display:flex;flex-direction:column;gap:12px;
+  -webkit-overflow-scrolling:touch;overscroll-behavior:contain;touch-action:pan-y;
   padding-right:2px;margin-right:-4px;
 }
 .drawer-scroll::-webkit-scrollbar{width:6px;}
 .drawer-scroll::-webkit-scrollbar-thumb{background:rgba(128,128,128,.28);border-radius:99px;}
 
 /* 折叠组 */
-.set-group{border:1px solid var(--line);border-radius:12px;background:var(--panel-bg);overflow:hidden;}
+.set-group{border:1px solid var(--line);border-radius:12px;background:var(--panel-bg);overflow:hidden;flex:0 0 auto;}
 .set-group-header{
   padding:14px 16px;display:flex;justify-content:space-between;align-items:center;
   font-size:14.5px;font-weight:600;cursor:pointer;user-select:none;
@@ -865,6 +867,10 @@ body.theme-mono .tab-item.active svg{color:#141414;}
     <button class="call-btn red hidden" id="btnHangupCall">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
       <span>挂断</span>
+    </button>
+    <button class="call-btn grey hidden" id="btnMinCall">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>
+      <span>收起</span>
     </button>
   </div>
 </div>
@@ -2016,6 +2022,7 @@ body.theme-mono .tab-item.active svg{color:#141414;}
   const btnAccept = $('btnAcceptCall');
   const btnReject = $('btnRejectCall');
   const btnHangup = $('btnHangupCall');
+  const btnMin = $('btnMinCall');
   const callStatus = $('callStatus');
   const callPill = $('callPill');
   const pillTime = $('pillTime');
@@ -2028,6 +2035,7 @@ body.theme-mono .tab-item.active svg{color:#141414;}
     btnAccept.classList.add('hidden');
     btnReject.classList.add('hidden');
     btnHangup.classList.add('hidden');
+    btnMin.classList.add('hidden');
     
     if (type === 'incoming') {
       callStatus.textContent = '邀请你语音通话...';
@@ -2063,6 +2071,7 @@ body.theme-mono .tab-item.active svg{color:#141414;}
     btnReject.classList.add('hidden');
     btnHangup.classList.remove('hidden');
     btnHangup.querySelector('span').textContent = '挂断';
+    btnMin.classList.remove('hidden');
     
     callTimer = setInterval(() => {
       callDuration++;
@@ -2071,12 +2080,14 @@ body.theme-mono .tab-item.active svg{color:#141414;}
     }, 1000);
   }
 
-  $('callAvatar').addEventListener('click', () => {
-    if (callState === 'talking') {
-      callScreen.classList.remove('show');
-      callPill.classList.add('show');
-    }
-  });
+  function minimizeCall() {
+    if (callState !== 'talking') return;
+    callScreen.classList.remove('show');
+    callPill.classList.add('show');
+  }
+
+  $('callAvatar').addEventListener('click', minimizeCall);
+  btnMin.addEventListener('click', minimizeCall);
 
   callPill.addEventListener('click', (e) => {
     if (e.target.closest('#pillHangup')) return;
@@ -2114,6 +2125,7 @@ body.theme-mono .tab-item.active svg{color:#141414;}
   function endCall(status, caller) {
     clearTimeout(callTimer);
     clearInterval(callTimer);
+    btnMin.classList.add('hidden');
     callState = 'idle';
     callScreen.classList.remove('show');
     callPill.classList.remove('show');
