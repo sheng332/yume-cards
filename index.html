@@ -923,6 +923,89 @@ body.theme-mono .tab-item.active svg{color:#141414;}
 
 /* ===================== 主页（手机桌面） ===================== */
 .home-page{padding:0;overflow:hidden;}
+/* 我的资料卡 */
+.home-profile{
+  position:relative;isolation:isolate;overflow:hidden;flex:none;
+  display:flex;flex-direction:column;align-items:center;gap:6px;
+  margin-bottom:24px;padding:24px 20px 20px;border-radius:28px;
+  background:linear-gradient(168deg,rgba(255,255,255,.92),rgba(255,255,255,.62));
+  border:1px solid var(--glass-line);
+  box-shadow:0 18px 40px rgba(52,74,110,.13), inset 0 1px 0 rgba(255,255,255,.85);
+  -webkit-backdrop-filter:blur(16px) saturate(1.35);
+  backdrop-filter:blur(16px) saturate(1.35);
+}
+.home-profile::before{
+  content:'';position:absolute;inset:0;z-index:-1;pointer-events:none;
+  background:
+    radial-gradient(62% 58% at 16% 8%, var(--accent) 0%, transparent 62%),
+    radial-gradient(56% 52% at 92% 12%, #ff9ec7 0%, transparent 66%),
+    radial-gradient(52% 48% at 72% 96%, #8fd9c4 0%, transparent 68%);
+  opacity:.20;
+}
+.home-profile::after{
+  content:'';position:absolute;left:16%;right:16%;top:0;height:1px;z-index:-1;
+  background:linear-gradient(90deg,transparent,rgba(255,255,255,.9),transparent);
+}
+.hp-avatar{
+  position:relative;flex:none;width:80px;height:80px;margin-bottom:3px;
+  padding:0;border:none;border-radius:50%;background:transparent;cursor:pointer;
+}
+.hp-avatar-inner{
+  display:grid;place-items:center;width:80px;height:80px;border-radius:50%;overflow:hidden;
+  background:linear-gradient(158deg,#ffffff,#ffe6f1);
+  box-shadow:0 10px 26px rgba(0,0,0,.17), 0 0 0 4px rgba(255,255,255,.78), 0 0 0 5.5px var(--glass-line);
+  transition:transform .16s ease;
+}
+.hp-avatar:active .hp-avatar-inner{transform:scale(.94);}
+.hp-avatar-inner img{width:100%;height:100%;object-fit:cover;display:block;}
+.hp-avatar-inner img[hidden]{display:none;}
+.hp-avatar-inner span{font-size:28px;font-weight:600;color:var(--accent);line-height:1;}
+.hp-avatar-inner span[hidden]{display:none;}
+.hp-cam{
+  position:absolute;right:-2px;bottom:-2px;width:26px;height:26px;border-radius:50%;
+  display:grid;place-items:center;font-style:normal;
+  background:var(--accent);color:var(--accent-contrast);
+  border:2.5px solid var(--app-bg);box-shadow:0 4px 10px rgba(0,0,0,.2);
+}
+.hp-cam svg{width:13px;height:13px;}
+.hp-name{
+  font-size:18px;font-weight:700;letter-spacing:.5px;color:var(--text);
+  cursor:pointer;
+}
+.hp-sign{
+  max-width:86%;padding:0 6px;text-align:center;
+  font-size:12px;line-height:1.65;color:var(--muted);
+  white-space:pre-wrap;word-break:break-word;cursor:pointer;
+}
+.hp-sign.empty{opacity:.6;font-style:italic;}
+.hp-edit{
+  position:absolute;top:12px;right:12px;padding:5px 11px;border-radius:99px;
+  border:1px solid var(--glass-line);background:var(--glass);color:var(--muted);
+  font-size:11px;letter-spacing:.2px;cursor:pointer;
+  -webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px);
+}
+.hp-edit:active{transform:scale(.96);}
+body.theme-cute .home-profile{
+  background:linear-gradient(168deg,rgba(255,250,252,.94),rgba(255,241,246,.66));
+  box-shadow:0 18px 40px rgba(214,120,160,.16), inset 0 1px 0 rgba(255,255,255,.9);
+}
+body.theme-night .home-profile{
+  background:linear-gradient(168deg,rgba(48,48,52,.9),rgba(28,28,32,.6));
+  border-color:rgba(255,255,255,.08);
+  box-shadow:0 18px 40px rgba(0,0,0,.45), inset 0 1px 0 rgba(255,255,255,.07);
+}
+body.theme-night .home-profile::before{opacity:.3;}
+body.theme-night .home-profile::after{background:linear-gradient(90deg,transparent,rgba(255,255,255,.18),transparent);}
+body.theme-night .hp-avatar-inner{
+  background:linear-gradient(158deg,#34343a,#3d2b35);
+  box-shadow:0 10px 26px rgba(0,0,0,.5), 0 0 0 4px rgba(32,32,36,.82), 0 0 0 5.5px rgba(255,255,255,.1);
+}
+body.theme-mono .home-profile::before{
+  background:
+    radial-gradient(62% 58% at 16% 8%, #c9c9c9 0%, transparent 62%),
+    radial-gradient(56% 52% at 92% 12%, #dedede 0%, transparent 66%);
+  opacity:.42;
+}
 .home-bg{position:absolute;inset:0;pointer-events:none;overflow:hidden;}
 .home-bg i{position:absolute;border-radius:50%;background:var(--accent);opacity:.13;filter:blur(48px);}
 .home-bg i:nth-child(1){width:200px;height:200px;top:-56px;right:-40px;opacity:.16;}
@@ -1764,6 +1847,22 @@ body.theme-night .glyph-music{background:linear-gradient(160deg,#4a2338,#3a1b2c)
 <aside class="drawer home-page" id="home">
   <div class="home-bg" aria-hidden="true"><i></i><i></i><i></i></div>
   <div class="home-scroll">
+    <section class="home-profile" id="homeProfile">
+      <button class="hp-avatar" id="homeAvatarBtn" type="button" aria-label="更换我的头像">
+        <span class="hp-avatar-inner">
+          <img id="homeAvatarImg" alt="" hidden>
+          <span id="homeAvatarLetter">我</span>
+        </span>
+        <em class="hp-cam" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+        </em>
+      </button>
+      <b class="hp-name" id="homeName">我</b>
+      <span class="hp-sign empty" id="homeSign">点这里写一句个签</span>
+      <button class="hp-edit" id="homeProfileEdit" type="button">编辑</button>
+    </section>
+    <input type="file" id="homeAvatarInput" accept="image/*" hidden>
+
     <div class="home-hero">
       <span class="home-date" id="homeDate"></span>
       <b class="home-greet" id="homeGreet">晚上好</b>
@@ -1914,6 +2013,8 @@ body.theme-night .glyph-music{background:linear-gradient(160deg,#4a2338,#3a1b2c)
     charName: '梦角',
     avatar: '',
     userAvatar: '',
+    homeAvatar: '',
+    homeSig: '',
     theme: 'imessage',
     chatBgs: [],
     callBgs: [],
@@ -2181,7 +2282,8 @@ body.theme-night .glyph-music{background:linear-gradient(160deg,#4a2338,#3a1b2c)
     return {
       savedAt: Date.now(),
       userName: state.userName, charName: state.charName,
-      avatar: state.avatar, userAvatar: state.userAvatar, theme: state.theme,
+      avatar: state.avatar, userAvatar: state.userAvatar,
+      homeAvatar: state.homeAvatar || '', homeSig: state.homeSig || '', theme: state.theme,
       chatBgs: state.chatBgs, callBgs: state.callBgs,
       chatBgId: state.chatBgId, callBgId: state.callBgId,
       bubbleCss: state.bubbleCss, bubblePresets: state.bubblePresets, bubbleId: state.bubbleId,
@@ -2335,6 +2437,8 @@ body.theme-night .glyph-music{background:linear-gradient(160deg,#4a2338,#3a1b2c)
     if (typeof d.charName === 'string') state.charName = d.charName;
     if (typeof d.avatar === 'string') state.avatar = d.avatar;
     if (typeof d.userAvatar === 'string') state.userAvatar = d.userAvatar;
+    if (typeof d.homeAvatar === 'string') state.homeAvatar = d.homeAvatar;
+    if (typeof d.homeSig === 'string') state.homeSig = d.homeSig;
     if (typeof d.theme === 'string') state.theme = d.theme;
     if (Array.isArray(d.chatBgs)) state.chatBgs = d.chatBgs;
     if (Array.isArray(d.callBgs)) state.callBgs = d.callBgs;
@@ -2428,6 +2532,8 @@ body.theme-night .glyph-music{background:linear-gradient(160deg,#4a2338,#3a1b2c)
     return g ? g.off : false;
   }
   function normalize() {
+    if (typeof state.homeAvatar !== 'string') state.homeAvatar = '';
+    if (typeof state.homeSig !== 'string') state.homeSig = '';
     if (!Array.isArray(state.groups)) state.groups = [];
     if (!Array.isArray(state.cards)) state.cards = [];
     if (!Array.isArray(state.stickers)) state.stickers = [];
@@ -4585,12 +4691,49 @@ body.theme-night .glyph-music{background:linear-gradient(160deg,#4a2338,#3a1b2c)
     b.textContent = n > 99 ? '99+' : String(n);
   }
 
+  /* 主页资料卡：头像和聊天头像独立 */
+  function paintHomeProfile() {
+    const nm = String(state.userName || '').trim() || '我';
+    const img = $('homeAvatarImg'), letter = $('homeAvatarLetter');
+    if (state.homeAvatar) {
+      img.src = state.homeAvatar;
+      img.hidden = false;
+      letter.hidden = true;
+    } else {
+      img.removeAttribute('src');
+      img.hidden = true;
+      letter.hidden = false;
+      letter.textContent = nm.slice(0, 1);
+    }
+    $('homeName').textContent = nm;
+    const sig = String(state.homeSig || '').trim();
+    $('homeSign').textContent = sig || '点这里写一句个签';
+    $('homeSign').classList.toggle('empty', !sig);
+  }
+
+  function openHomeProfileEditor() {
+    openModal('编辑我的资料',
+      '<label class="field"><span>名字</span><input id="hpNameInput" maxlength="20" placeholder="怎么称呼你？" value="' + esc(state.userName || '我') + '"></label>' +
+      '<label class="field"><span>个签</span><textarea id="hpSigInput" maxlength="80" placeholder="写一句喜欢的话…">' + esc(state.homeSig || '') + '</textarea></label>' +
+      '<p class="hint">想换头像？关掉这里，直接点主页上你的头像，就能从相册选择。</p>',
+      '保存', function () {
+        const nm = String(($('hpNameInput') && $('hpNameInput').value) || '').trim().slice(0, 20);
+        state.userName = nm || '我';
+        state.homeSig = String(($('hpSigInput') && $('hpSigInput').value) || '').trim().slice(0, 80);
+        save();
+        renderHome();
+        toast('资料已更新');
+        return true;
+      });
+  }
+
   function renderHome() {
     const d = new Date();
     const week = ['周日', '周一', '周二', '周三', '周四', '周五', '周六'][d.getDay()];
     $('homeDate').textContent = (d.getMonth() + 1) + '月' + d.getDate() + '日 · ' + week;
     const nm = String(state.userName || '').trim();
     $('homeGreet').textContent = greetingText() + (nm ? '，' + nm : '');
+    paintHomeProfile();
     const c = activeContact();
     let sub = '今天想聊点什么？';
     if (state.letters.some(function (l) { return l.role !== 'me' && !l.read; })) {
@@ -4656,6 +4799,24 @@ body.theme-night .glyph-music{background:linear-gradient(160deg,#4a2338,#3a1b2c)
   $('btnCloseLib').addEventListener('click', closeAll);
   $('btnCloseSet').addEventListener('click', closeAll);
   $('homeChatIcon').addEventListener('click', function () { switchPage('chat'); });
+
+  /* 资料卡：点头像换图，点名字/个签/编辑改资料 */
+  $('homeAvatarBtn').addEventListener('click', function () { $('homeAvatarInput').click(); });
+  $('homeName').addEventListener('click', openHomeProfileEditor);
+  $('homeSign').addEventListener('click', openHomeProfileEditor);
+  $('homeProfileEdit').addEventListener('click', openHomeProfileEditor);
+  $('homeAvatarInput').addEventListener('change', function (e) {
+    const f = e.target.files && e.target.files[0];
+    if (!f) return;
+    readAvatarFile(f, function (url) {
+      if (!url) { toast('这张图片读不出来，换一张试试'); return; }
+      state.homeAvatar = url;
+      save();
+      paintHomeProfile();
+      toast('头像已换好');
+    });
+    e.target.value = '';
+  });
   document.addEventListener('keydown', function (e) {
     if (e.key === 'Escape') {
       if ($('chatSearch').classList.contains('show')) { closeChatSearch(); return; }
