@@ -543,6 +543,8 @@ body.theme-mono .letter-badge{background:#141414;}
 }
 .moment-comment{font-size:12.5px;line-height:1.65;word-break:break-word;}
 .moment-comment b{font-weight:600;}
+.moment-comment .reply-to{color:var(--muted);font-weight:400;}
+.moment-comment .moment-csticker{display:block;max-width:96px;margin-top:5px;border-radius:8px;cursor:zoom-in;}
 .moment-cinput{display:flex;gap:6px;}
 .moment-cinput input{
   flex:1;min-width:0;border:1px solid var(--input-border);background:var(--input-bg);
@@ -2330,6 +2332,8 @@ body.theme-mono .tab-item.active svg{color:#141414;}
         if (typeof cm.ts !== 'number' || !isFinite(cm.ts)) cm.ts = Date.now();
         if (typeof cm.replyDueAt !== 'number' || !isFinite(cm.replyDueAt)) cm.replyDueAt = 0;
         if (typeof cm.replyCid !== 'string') cm.replyCid = '';
+        if (typeof cm.replyTo !== 'string') cm.replyTo = '';
+        if (typeof cm.sticker !== 'string') cm.sticker = '';
       });
       if (!Array.isArray(m.pending)) m.pending = [];
       m.pending = m.pending.filter(p => p && typeof p === 'object');
@@ -2338,6 +2342,8 @@ body.theme-mono .tab-item.active svg{color:#141414;}
         if (typeof p.dueAt !== 'number' || !isFinite(p.dueAt)) p.dueAt = Date.now();
         if (p.kind !== 'like' && p.kind !== 'comment') p.kind = 'like';
         if (typeof p.text !== 'string') p.text = '';
+        if (typeof p.replyTo !== 'string') p.replyTo = '';
+        if (typeof p.sticker !== 'string') p.sticker = '';
       });
     });
     state.moments = state.moments.slice(0, 50);
@@ -4890,23 +4896,37 @@ body.theme-mono .tab-item.active svg{color:#141414;}
     bannerTimer = setTimeout(function () { el.classList.remove('show'); }, 4000);
   }
 
+  const LETTER_REPLY_PLAIN = [
+    '我收到啦。', '看到你的字，心软了一下。', '我也想你。', '等会儿慢慢和你说。',
+    '今天也要好好吃饭。', '嗯，我一直在。', '你说的我都记着。', '别担心，有我呢。',
+    '想抱抱你。', '下次换我先写给你。'
+  ];
+
   function composeLetter(c, opts) {
     opts = opts || {};
     const pool = state.cards.filter(function (x) {
       return x && !x.off && !isGroupOff(x.group) && typeof x.text === 'string' && x.text.trim();
     });
-    if (!pool.length) return null;
     const cfg = state.letterCfg;
-    const pick = Math.floor(Math.random() * (cfg.maxCards - cfg.minCards + 1)) + cfg.minCards;
-    const n = Math.max(1, Math.min(pick, pool.length));
-    const shuffled = pool.slice().sort(function () { return Math.random() - 0.5; });
-    const body = shuffled.slice(0, n).map(function (x) { return x.text.trim(); });
+    const plain = !!opts.plain && (!pool.length || Math.random() < 0.3);
+    let body = [];
+    let text = '';
+    if (plain) {
+      text = LETTER_REPLY_PLAIN[Math.floor(Math.random() * LETTER_REPLY_PLAIN.length)];
+    } else {
+      if (!pool.length) return null;
+      const pick = Math.floor(Math.random() * (cfg.maxCards - cfg.minCards + 1)) + cfg.minCards;
+      const n = Math.max(1, Math.min(pick, pool.length));
+      const shuffled = pool.slice().sort(function () { return Math.random() - 0.5; });
+      body = shuffled.slice(0, n).map(function (x) { return x.text.trim(); });
+      text = joinCardTexts(body);
+    }
     return {
       id: uid(),
       cid: c.id,
       ts: Date.now(),
       body: body,
-      text: joinCardTexts(body),
+      text: text,
       emoji: cfg.allowEmoji ? LETTER_EMOJI[Math.floor(Math.random() * LETTER_EMOJI.length)] : '',
       sticker: (cfg.allowSticker && state.stickers.length)
         ? state.stickers[Math.floor(Math.random() * state.stickers.length)].url : '',
@@ -4976,7 +4996,7 @@ body.theme-mono .tab-item.active svg{color:#141414;}
     due.forEach(function (mine) {
       const c = contactById(mine.cid) || activeContact();
       if (!c) return;
-      const letter = composeLetter(c, { replyTo: mine.id });
+      const letter = composeLetter(c, { replyTo: mine.id, plain: true });
       if (!letter) { mine.replyDueAt = now + 60000; return; }
       mine.replied = true;
       mine.replyDueAt = 0;
@@ -5121,6 +5141,27 @@ body.theme-mono .tab-item.active svg{color:#141414;}
   function momentCommentText() {
     return MOMENT_COMMENTS[Math.floor(Math.random() * MOMENT_COMMENTS.length)];
   }
+  // TA 的评论：有时用字卡拼一句，有时直接说一句；可能带 emoji / 表情包
+  function charMomentComment() {
+    const cfg = state.momentCfg;
+    const pool = state.cards.filter(function (x) {
+      return x && !x.off && !isGroupOff(x.group) && typeof x.text === 'string' && x.text.trim();
+    });
+    let text = '';
+    if (pool.length && Math.random() < 0.65) {
+      const n = Math.max(1, Math.min(pool.length, 1 + Math.floor(Math.random() * 3)));
+      const shuffled = pool.slice().sort(function () { return Math.random() - 0.5; });
+      text = joinCardTexts(shuffled.slice(0, n).map(function (x) { return x.text.trim(); }));
+    } else {
+      text = momentCommentText();
+    }
+    if (Math.random() < 0.35) {
+      text += ' ' + LETTER_EMOJI[Math.floor(Math.random() * LETTER_EMOJI.length)];
+    }
+    const sticker = (state.stickers.length && Math.random() * 100 < cfg.stickerProb)
+      ? state.stickers[Math.floor(Math.random() * state.stickers.length)].url : '';
+    return { text: text, sticker: sticker };
+  }
   function momentVisible(m) {
     if (!state.singleMode) return true;
     return m.cid === 'me' || m.cid === state.activeId;
@@ -5151,7 +5192,13 @@ body.theme-mono .tab-item.active svg{color:#141414;}
       const imgs = (m.images || []).slice(0, 3);
       const likes = momentLikeNames(m.likes);
       const comments = (m.comments || []).map(function (cm) {
-        return '<div class="moment-comment"><b>' + esc(momentName(cm.cid)) + '</b>：' + esc(cm.text) + '</div>';
+        let rep = '';
+        if (cm.replyTo) {
+          const target = (m.comments || []).find(function (x) { return x.id === cm.replyTo; });
+          if (target) rep = '<span class="reply-to"> 回复 @' + esc(momentName(target.cid)) + '</span>';
+        }
+        return '<div class="moment-comment"><b>' + esc(momentName(cm.cid)) + '</b>' + rep + '：' + esc(cm.text) +
+          (cm.sticker ? '<img class="moment-csticker" src="' + esc(cm.sticker) + '" alt="表情包">' : '') + '</div>';
       }).join('');
       return '<div class="moment-card" data-mid="' + esc(m.id) + '">' +
         '<div class="moment-head"><div class="avatar">' + esc(String(name).slice(0, 1)) + '</div>' +
@@ -5289,9 +5336,13 @@ body.theme-mono .tab-item.active svg{color:#141414;}
           if (m.likes.indexOf(p.cid) < 0) m.likes.push(p.cid);
           notices.push({ cid: p.cid, text: '赞了你的动态', mid: m.id });
         } else {
+          const content = p.text ? { text: p.text, sticker: p.sticker || '' } : charMomentComment();
           m.comments = m.comments || [];
-          m.comments.push({ id: uid(), cid: p.cid, text: p.text || momentCommentText(), ts: now, replyDueAt: 0, replyCid: '' });
-          notices.push({ cid: p.cid, text: '评论了你的动态', mid: m.id });
+          m.comments.push({
+            id: uid(), cid: p.cid, text: content.text, sticker: content.sticker || '',
+            ts: now, replyDueAt: 0, replyCid: '', replyTo: p.replyTo || ''
+          });
+          notices.push({ cid: p.cid, text: p.replyTo ? '回复了你的评论' : '评论了你的动态', mid: m.id });
         }
       });
       m.pending = m.pending.filter(function (p) { return p && p.dueAt > now; });
@@ -5349,14 +5400,19 @@ body.theme-mono .tab-item.active svg{color:#141414;}
     const m = state.moments.find(function (x) { return x.id === mid; });
     if (!m) return;
     m.comments = m.comments || [];
-    m.comments.push({ id: uid(), cid: 'me', text: t.slice(0, 200), ts: Date.now(), replyDueAt: 0, replyCid: '' });
+    const mine = { id: uid(), cid: 'me', text: t.slice(0, 200), ts: Date.now(), replyDueAt: 0, replyCid: '', replyTo: '' };
+    m.comments.push(mine);
     const cfg = state.momentCfg;
     const author = momentAuthor(m);
     const responders = author ? [author] : momentTargets();
     if (responders.length && Math.random() * 100 < cfg.replyProb) {
       const c = responders[Math.floor(Math.random() * responders.length)];
+      const content = charMomentComment();
       m.pending = m.pending || [];
-      m.pending.push({ cid: c.id, dueAt: Date.now() + 60000 + Math.random() * 29 * 60000, kind: 'comment', text: momentCommentText() });
+      m.pending.push({
+        cid: c.id, dueAt: Date.now() + 15000 + Math.random() * 75000, kind: 'comment',
+        text: content.text, sticker: content.sticker, replyTo: mine.id
+      });
     }
     save();
     renderMoments();
@@ -5377,7 +5433,11 @@ body.theme-mono .tab-item.active svg{color:#141414;}
         m.pending.push({ cid: c.id, dueAt: now + 60000 + Math.random() * 7 * 60000, kind: 'like', text: '' });
       }
       if (Math.random() * 100 < cfg.reactProb) {
-        m.pending.push({ cid: c.id, dueAt: now + 120000 + Math.random() * 18 * 60000, kind: 'comment', text: momentCommentText() });
+        const content = charMomentComment();
+        m.pending.push({
+          cid: c.id, dueAt: now + 120000 + Math.random() * 18 * 60000, kind: 'comment',
+          text: content.text, sticker: content.sticker, replyTo: ''
+        });
       }
     });
     state.moments.unshift(m);
@@ -5505,7 +5565,7 @@ body.theme-mono .tab-item.active svg{color:#141414;}
   momentListEl.addEventListener('click', function (e) {
     const like = e.target.closest('[data-like]');
     if (like) { toggleMomentLike(like.dataset.like); return; }
-    const img = e.target.closest('.moment-imgs img, .moment-sticker');
+    const img = e.target.closest('.moment-imgs img, .moment-sticker, .moment-csticker');
     if (img) { openImageView(img.src); return; }
     const send = e.target.closest('[data-csend]');
     if (send) {
