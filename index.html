@@ -143,7 +143,8 @@ input,textarea{font-family:inherit;}
   display:grid;place-items:center;
   background:linear-gradient(135deg,#ff9ecb,#a77bff);
   color:#2a0f24;font-weight:700;font-size:16px;
-  background-size:cover;background-position:center;
+  background-size:contain;background-position:center;background-repeat:no-repeat;
+  background-color:var(--panel-bg);
   box-shadow:0 0 0 2px rgba(128,128,128,.12);
   user-select:none;overflow:hidden;
 }
@@ -201,11 +202,12 @@ body.theme-wechat .avatar{border-radius:6px;}
   display:grid;place-items:center;
   background:linear-gradient(135deg,#a77bff,#ff9ecb);
   color:#fff;font-size:14px;font-weight:600;
-  background-size:cover;background-position:center;
+  background-size:contain;background-position:center;background-repeat:no-repeat;
+  background-color:var(--panel-bg);
   box-shadow:0 1px 3px rgba(0,0,0,.1);
   user-select:none;overflow:hidden;
 }
-.msg.me .avatar-sm{background:linear-gradient(135deg,#7bc8ff,#5ea8ff);}
+.msg.me .avatar-sm{background-image:linear-gradient(135deg,#7bc8ff,#5ea8ff);}
 
 .msg-content{
   display:flex;flex-direction:column;gap:3px;
@@ -1592,10 +1594,10 @@ body.theme-mono .tab-item.active svg{color:#141414;}
     const av = document.createElement('div');
     av.className = 'avatar-sm';
     if (msg.role === 'char') {
-      if (state.avatar) { av.style.backgroundImage = `url("${state.avatar}")`; av.style.backgroundSize = 'cover'; }
+      if (state.avatar) { av.style.backgroundImage = `url("${state.avatar}")`; av.style.backgroundSize = 'contain'; }
       else { av.textContent = (state.charName || '梦').slice(0, 1); }
     } else {
-      if (state.userAvatar) { av.style.backgroundImage = `url("${state.userAvatar}")`; av.style.backgroundSize = 'cover'; }
+      if (state.userAvatar) { av.style.backgroundImage = `url("${state.userAvatar}")`; av.style.backgroundSize = 'contain'; }
       else { av.textContent = (state.userName || '我').slice(0, 1); }
     }
 
@@ -1713,7 +1715,7 @@ body.theme-mono .tab-item.active svg{color:#141414;}
     
     const av = document.createElement('div');
     av.className = 'avatar-sm';
-    if (state.avatar) { av.style.backgroundImage = `url("${state.avatar}")`; av.style.backgroundSize = 'cover'; }
+    if (state.avatar) { av.style.backgroundImage = `url("${state.avatar}")`; av.style.backgroundSize = 'contain'; }
     else { av.textContent = (state.charName || '梦').slice(0, 1); }
 
     const content = document.createElement('div');
@@ -1852,7 +1854,7 @@ body.theme-mono .tab-item.active svg{color:#141414;}
       if (!el) return;
       if (state.avatar) {
         el.style.backgroundImage = `url("${state.avatar}")`;
-        el.style.backgroundSize = 'cover'; el.style.backgroundPosition = 'center';
+        el.style.backgroundSize = 'contain'; el.style.backgroundPosition = 'center'; el.style.backgroundRepeat = 'no-repeat';
         el.textContent = '';
       } else {
         el.style.backgroundImage = '';
@@ -1864,7 +1866,7 @@ body.theme-mono .tab-item.active svg{color:#141414;}
     if (ua) {
       if (state.userAvatar) {
         ua.style.backgroundImage = `url("${state.userAvatar}")`;
-        ua.style.backgroundSize = 'cover'; ua.style.backgroundPosition = 'center'; ua.textContent = '';
+        ua.style.backgroundSize = 'contain'; ua.style.backgroundPosition = 'center'; ua.style.backgroundRepeat = 'no-repeat'; ua.textContent = '';
       } else {
         ua.style.backgroundImage = ''; ua.textContent = uName.slice(0, 1);
       }
@@ -1882,10 +1884,10 @@ body.theme-mono .tab-item.active svg{color:#141414;}
            const av = el.querySelector('.avatar-sm');
            if (av) {
                if (m.role === 'char') {
-                   if (state.avatar) { av.style.backgroundImage = `url("${state.avatar}")`; av.textContent = ''; }
+                   if (state.avatar) { av.style.backgroundImage = `url("${state.avatar}")`; av.style.backgroundSize = 'contain'; av.textContent = ''; }
                    else { av.style.backgroundImage = ''; av.textContent = cName.slice(0, 1); }
                } else {
-                   if (state.userAvatar) { av.style.backgroundImage = `url("${state.userAvatar}")`; av.textContent = ''; }
+                   if (state.userAvatar) { av.style.backgroundImage = `url("${state.userAvatar}")`; av.style.backgroundSize = 'contain'; av.textContent = ''; }
                    else { av.style.backgroundImage = ''; av.textContent = uName.slice(0, 1); }
                }
            }
@@ -1902,12 +1904,13 @@ body.theme-mono .tab-item.active svg{color:#141414;}
       reader.onload = function () {
         const img = new Image();
         img.onload = function () {
-          const size = 160;
+          const maxSide = 256;
+          const scale = Math.min(1, maxSide / Math.max(img.width, img.height));
           const canvas = document.createElement('canvas');
-          canvas.width = size; canvas.height = size;
+          canvas.width = Math.max(1, Math.round(img.width * scale));
+          canvas.height = Math.max(1, Math.round(img.height * scale));
           const ctx = canvas.getContext('2d');
-          const s = Math.min(img.width, img.height);
-          ctx.drawImage(img, (img.width - s) / 2, (img.height - s) / 2, s, s, 0, 0, size, size);
+          ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
           const dataUrl = canvas.toDataURL('image/jpeg', 0.86);
           
           if (isUser) state.userAvatar = dataUrl; else state.avatar = dataUrl;
