@@ -109,9 +109,9 @@ button{font-family:inherit;}
 input,textarea{font-family:inherit;}
 
 /* ===================== 主容器 ===================== */
-:root{--tabbar-h:64px;--header-h:52px;--app-h:min(860px,calc(100vh - 32px));}
+:root{--tabbar-h:72px;--header-h:52px;--app-h:min(860px,calc(100vh - 32px));}
 .app{
-  position:relative;--tabbar-h:64px;
+  position:relative;--tabbar-h:72px;
   width:min(520px,100%); height:min(860px,calc(100vh - 32px));
   display:flex;flex-direction:column;
   background:var(--app-bg);
@@ -148,7 +148,7 @@ input,textarea{font-family:inherit;}
   position:absolute;top:0;left:0;right:0;z-index:10;
   display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;
   height:var(--header-h);
-  padding:0 52px;
+  padding:0 92px;
   border-bottom:1px solid var(--line);
   background:var(--header-bg);
   -webkit-backdrop-filter:blur(20px) saturate(1.6);
@@ -180,6 +180,16 @@ input,textarea{font-family:inherit;}
 }
 .chat-info:hover{background:var(--card-hover);}
 .chat-info svg{width:21px;height:21px;}
+.chat-search{
+  position:absolute;right:46px;top:50%;transform:translateY(-50%);
+  width:38px;height:38px;border-radius:10px;
+  display:grid;place-items:center;
+  background:transparent;border:none;color:var(--text);
+  cursor:pointer;padding:0;
+  transition:background .15s;
+}
+.chat-search:hover{background:var(--card-hover);}
+.chat-search svg{width:20px;height:20px;}
 .head-name{
   max-width:100%;font-size:16.5px;font-weight:600;letter-spacing:.2px;
   line-height:1.25;
@@ -862,7 +872,7 @@ body.theme-mono .moment-action.liked{color:#141414;}
 .drawer{
   position:fixed;top:calc((100vh - var(--app-h)) / 2);left:50%;
   width:min(520px,100%);
-  height:calc(var(--app-h) - var(--tabbar-h));z-index:30;
+  height:calc(var(--app-h) - var(--tabbar-h) - env(safe-area-inset-bottom,0px));z-index:30;
   display:flex;flex-direction:column;
   padding:16px 16px 18px;
   background:var(--drawer-bg);color:var(--text);
@@ -876,25 +886,118 @@ body.theme-mono .moment-action.liked{color:#141414;}
 .drawer-head h2{margin:0;font-size:17px;font-weight:600;letter-spacing:.3px;}
 .drawer-head .icon-btn{margin-left:auto;}
 
-/* ===================== 底部导航 ===================== */
+/* ===================== 底部胶囊导航 ===================== */
 .tabbar{
-  flex:none;z-index:35;display:grid;grid-template-columns:repeat(4,1fr);
-  height:var(--tabbar-h);padding-bottom:env(safe-area-inset-bottom);
-  border-top:1px solid var(--line);
+  flex:none;z-index:35;
+  height:calc(var(--tabbar-h) + env(safe-area-inset-bottom,0px));
+  padding:8px 18px calc(8px + env(safe-area-inset-bottom,0px));
+  background:transparent;
+}
+.tab-pill{
+  height:56px;border-radius:99px;
+  border:1px solid var(--glass-line);
   background:var(--glass);
   -webkit-backdrop-filter:blur(20px) saturate(1.6);
   backdrop-filter:blur(20px) saturate(1.6);
+  box-shadow:0 8px 26px rgba(0,0,0,.12), inset 0 1px 0 rgba(255,255,255,.5);
+  display:grid;grid-template-columns:repeat(3,1fr);
+  overflow:hidden;
 }
 .tab-item{
-  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;
   border:none;background:transparent;color:var(--muted);
-  font-size:11px;letter-spacing:.3px;cursor:pointer;transition:color .2s;
-  padding:0;
+  font-size:10.5px;letter-spacing:.3px;cursor:pointer;transition:color .2s;
+  padding:0;position:relative;
 }
-.tab-item svg{width:23px;height:23px;}
+.tab-item svg{width:22px;height:22px;}
 .tab-item.active{color:var(--text);font-weight:600;}
 .tab-item.active svg{color:var(--accent);}
+.tab-item.active::after{
+  content:'';position:absolute;bottom:7px;left:50%;transform:translateX(-50%);
+  width:14px;height:2.5px;border-radius:2px;background:var(--accent);opacity:.85;
+}
 body.theme-mono .tab-item.active svg{color:#141414;}
+
+/* ===================== 主页（手机桌面） ===================== */
+.home-page{padding:0;overflow:hidden;}
+.home-bg{position:absolute;inset:0;pointer-events:none;overflow:hidden;}
+.home-bg i{position:absolute;border-radius:50%;background:var(--accent);opacity:.13;filter:blur(48px);}
+.home-bg i:nth-child(1){width:200px;height:200px;top:-56px;right:-40px;opacity:.16;}
+.home-bg i:nth-child(2){width:160px;height:160px;top:150px;left:-70px;opacity:.1;}
+.home-bg i:nth-child(3){width:240px;height:240px;bottom:-90px;right:-80px;opacity:.09;}
+.home-scroll{
+  position:relative;z-index:1;flex:1;min-height:0;overflow-y:auto;
+  display:flex;flex-direction:column;padding:34px 18px 16px;
+  -webkit-overflow-scrolling:touch;
+}
+.home-hero{display:flex;flex-direction:column;gap:5px;padding:0 6px;}
+.home-date{font-size:11.5px;color:var(--muted);letter-spacing:.4px;}
+.home-greet{font-size:21px;font-weight:700;letter-spacing:.3px;color:var(--text);}
+.home-sub{font-size:12px;color:var(--muted);}
+.home-apps{
+  display:grid;grid-template-columns:repeat(4,1fr);gap:22px 6px;
+  margin-top:28px;padding:0 2px;
+}
+.app-icon{
+  position:relative;display:flex;flex-direction:column;align-items:center;gap:7px;
+  background:transparent;border:none;padding:0;color:var(--text);
+  font-size:11.5px;cursor:pointer;
+}
+.app-glyph{
+  width:58px;height:58px;border-radius:17px;
+  display:grid;place-items:center;
+  box-shadow:0 8px 18px rgba(0,0,0,.10);
+  transition:transform .16s ease;
+}
+.app-glyph svg{width:27px;height:27px;}
+.app-icon:active .app-glyph{transform:scale(.92);}
+.app-label{max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--text);}
+.glyph-chat{background:linear-gradient(160deg,#eaf4ff,#cfe6ff);color:#1f7ae0;}
+.glyph-moment{background:linear-gradient(160deg,#fff0e2,#ffdfc4);color:#e07a2c;}
+.glyph-letter{background:linear-gradient(160deg,#eaf9ef,#d3f0de);color:#1a9b58;}
+.glyph-music{background:linear-gradient(160deg,#ffeaf3,#ffd6e5);color:#de478c;}
+body.theme-night .glyph-chat{background:linear-gradient(160deg,#1d3a5a,#16304d);color:#7fbcf5;}
+body.theme-night .glyph-moment{background:linear-gradient(160deg,#4a3420,#3a2919);color:#f0a45f;}
+body.theme-night .glyph-letter{background:linear-gradient(160deg,#17392a,#122e22);color:#63d59a;}
+body.theme-night .glyph-music{background:linear-gradient(160deg,#4a2338,#3a1b2c);color:#f07cae;}
+.app-badge{
+  position:absolute;top:-5px;left:calc(50% + 15px);
+  min-width:18px;height:18px;padding:0 5px;border-radius:9px;
+  background:#ff3b30;color:#fff;font-size:11px;line-height:18px;
+  text-align:center;font-style:normal;font-weight:600;
+  box-shadow:0 2px 8px rgba(255,59,48,.35);
+}
+.app-badge[hidden]{display:none;}
+.home-hint{margin-top:auto;padding-top:30px;text-align:center;font-size:11px;color:var(--muted);}
+
+/* ===================== 查找聊天记录 ===================== */
+.search-page{padding-bottom:14px;}
+.search-back{margin-left:0 !important;}
+.search-field{position:relative;flex:none;margin-bottom:10px;}
+.search-field svg{position:absolute;left:12px;top:50%;transform:translateY(-50%);width:16px;height:16px;color:var(--muted);}
+.search-field input{
+  width:100%;padding:11px 12px 11px 34px;border-radius:12px;
+  border:1px solid var(--line);background:var(--panel-bg);color:var(--text);
+  font-size:13.5px;outline:none;
+}
+.search-field input:focus{border-color:var(--accent);}
+.search-empty{padding:30px 0;text-align:center;color:var(--muted);font-size:12.5px;}
+.search-result{
+  display:flex;flex-direction:column;gap:4px;width:100%;text-align:left;
+  background:transparent;border:none;border-bottom:1px solid var(--line);
+  padding:11px 4px;color:var(--text);cursor:pointer;
+}
+.search-result .sr-top{display:flex;align-items:center;gap:6px;font-size:11px;color:var(--muted);}
+.search-result .sr-role{color:var(--accent);font-weight:600;}
+.search-result .sr-text{font-size:13.5px;line-height:1.55;word-break:break-word;}
+.search-result .sr-text mark{background:rgba(255,200,0,.45);color:inherit;border-radius:3px;padding:0 1px;}
+.history-more{
+  display:block;margin:8px auto 12px;padding:7px 15px;border-radius:99px;
+  border:1px solid var(--line);background:var(--panel-bg);color:var(--muted);
+  font-size:12px;cursor:pointer;
+}
+.msg-hit{animation:msgHit 1.7s ease;}
+@keyframes msgHit{0%,100%{background-color:transparent;}18%{background-color:rgba(255,200,0,.22);}}
 
 .drawer-scroll{
   flex:1;overflow-y:auto;min-height:0;display:flex;flex-direction:column;gap:12px;
@@ -1199,7 +1302,7 @@ body.theme-mono .tab-item.active svg{color:#141414;}
   :root{--app-h:100vh;--app-h:100dvh;}
   body{padding:0;}
   .app{width:100%;height:100vh;height:100dvh;border-radius:0;border:none;box-shadow:none;}
-  .drawer{top:0;width:100%;border-radius:0;height:calc(var(--app-h) - var(--tabbar-h));}
+  .drawer{top:0;width:100%;border-radius:0;height:calc(var(--app-h) - var(--tabbar-h) - env(safe-area-inset-bottom,0px));}
   .theme-list{grid-template-columns:repeat(2,1fr);}
 }
 </style>
@@ -1249,6 +1352,9 @@ body.theme-mono .tab-item.active svg{color:#141414;}
     <div class="header-center" id="headerCenter" title="点一下，让 TA 再发一轮">
       <b class="head-name" id="headName">梦角</b>
     </div>
+    <button class="chat-search" id="btnChatSearch" aria-label="查找聊天记录">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.2-3.2"/></svg>
+    </button>
     <button class="chat-info" id="btnChatInfo" aria-label="聊天资料">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="5" cy="12" r="1.2" fill="currentColor" stroke="none"/><circle cx="12" cy="12" r="1.2" fill="currentColor" stroke="none"/><circle cx="19" cy="12" r="1.2" fill="currentColor" stroke="none"/></svg>
     </button>
@@ -1302,24 +1408,22 @@ body.theme-mono .tab-item.active svg{color:#141414;}
     <div class="emoji-panel" id="emojiPanel"></div>
   </div>
 
-  <!-- 底部导航 -->
+  <!-- 底部胶囊导航 -->
   <nav class="tabbar" id="tabbar">
-    <button class="tab-item" data-page="lib" type="button">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="12" height="16" rx="2"/><path d="M9 4h9a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-3"/></svg>
-      <span>字卡库</span>
-    </button>
-    <button class="tab-item active" data-page="chat" type="button">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.4 8.4 0 0 1-9 8.4 8.6 8.6 0 0 1-3.2-.6L3 21l1.7-5.1A8.4 8.4 0 0 1 12 3.1a8.4 8.4 0 0 1 9 8.4z"/><path d="M8 12h.01M12 12h.01M16 12h.01"/></svg>
-      <span>聊天</span>
-    </button>
-    <button class="tab-item" data-page="set" type="button">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.6a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9c.2.44.62.75 1.1.87H21a2 2 0 1 1 0 4h-.09c-.48.12-.9.43-1.1.87z"/></svg>
-      <span>设置</span>
-    </button>
-    <button class="tab-item" data-page="more" type="button">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="3.5" width="7" height="7" rx="1.5"/><rect x="13.5" y="3.5" width="7" height="7" rx="1.5"/><rect x="3.5" y="13.5" width="7" height="7" rx="1.5"/><rect x="13.5" y="13.5" width="7" height="7" rx="1.5"/></svg>
-      <span>更多</span>
-    </button>
+    <div class="tab-pill">
+      <button class="tab-item active" data-page="home" type="button">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 10.5 12 3l8 7.5"/><path d="M6 9.5V20h12V9.5"/><path d="M10 20v-5h4v5"/></svg>
+        <span>主页</span>
+      </button>
+      <button class="tab-item" data-page="lib" type="button">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="12" height="16" rx="2"/><path d="M9 4h9a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-3"/></svg>
+        <span>字卡库</span>
+      </button>
+      <button class="tab-item" data-page="set" type="button">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.6a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9c.2.44.62.75 1.1.87H21a2 2 0 1 1 0 4h-.09c-.48.12-.9.43-1.1.87z"/></svg>
+        <span>设置</span>
+      </button>
+    </div>
   </nav>
 </div>
 
@@ -1401,6 +1505,19 @@ body.theme-mono .tab-item.active svg{color:#141414;}
     <button class="icon-btn" id="btnAddContact" title="添加联系人">＋</button>
   </div>
   <div class="contact-list" id="contactList"></div>
+</aside>
+
+<!-- ============ 查找聊天记录 ============ -->
+<aside class="drawer search-page" id="chatSearch">
+  <div class="drawer-head">
+    <button class="icon-btn search-back" id="btnCloseSearch" aria-label="返回聊天">←</button>
+    <h2>查找聊天记录</h2>
+  </div>
+  <div class="search-field">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.2-3.2"/></svg>
+    <input id="chatSearchInput" type="search" placeholder="搜关键字，比如「晚安」" autocomplete="off">
+  </div>
+  <div class="drawer-scroll" id="chatSearchResults"></div>
 </aside>
 
 <!-- ============ 字卡库 ============ -->
@@ -1640,46 +1757,50 @@ body.theme-mono .tab-item.active svg{color:#141414;}
   </div>
 </aside>
 
-<!-- ============ 更多 ============ -->
-<aside class="drawer" id="more">
-  <div class="drawer-head">
-    <h2>更多</h2>
-    <button class="icon-btn" id="btnCloseMore">✕</button>
-  </div>
-  <div class="drawer-scroll">
-    <div class="more-card" id="moreListenCard" role="button" tabindex="0">
-      <div class="mc-icon">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>
-      </div>
-      <div class="mc-info">
-        <b>一起听歌</b>
-        <span>和 TA 一起听歌，也会偶尔发来歌词</span>
-      </div>
-      <span class="badge-soon">打开</span>
+<!-- ============ 主页（手机桌面） ============ -->
+<aside class="drawer home-page" id="home">
+  <div class="home-bg" aria-hidden="true"><i></i><i></i><i></i></div>
+  <div class="home-scroll">
+    <div class="home-hero">
+      <span class="home-date" id="homeDate"></span>
+      <b class="home-greet" id="homeGreet">晚上好</b>
+      <span class="home-sub" id="homeSub">今天想聊点什么？</span>
     </div>
-    <div class="more-card" id="moreLetterCard" role="button" tabindex="0">
-      <div class="mc-icon">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3 7 9 6 9-6"/></svg>
-      </div>
-      <div class="mc-info">
-        <b>信件</b>
-        <span>TA 从字卡里拼给你的信，到了时间会写给你</span>
-      </div>
-      <span class="letter-badge" id="moreLetterBadge" hidden></span>
-      <span class="badge-soon">打开</span>
+
+    <div class="home-apps">
+      <button class="app-icon" id="homeChatIcon" type="button">
+        <span class="app-glyph glyph-chat">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.4 8.4 0 0 1-9 8.4 8.6 8.6 0 0 1-3.2-.6L3 21l1.7-5.1A8.4 8.4 0 0 1 12 3.1a8.4 8.4 0 0 1 9 8.4z"/><path d="M8.5 12h.01M12 12h.01M15.5 12h.01"/></svg>
+        </span>
+        <span class="app-label">聊天</span>
+        <em class="app-badge" id="homeChatBadge" hidden></em>
+      </button>
+
+      <button class="app-icon" id="moreMomentsCard" type="button">
+        <span class="app-glyph glyph-moment">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="3"/><circle cx="8.5" cy="9" r="1.5"/><path d="m4 17 5-5 4 4 3-3 4 4"/></svg>
+        </span>
+        <span class="app-label">朋友圈</span>
+        <em class="app-badge" id="moreMomentBadge" hidden></em>
+      </button>
+
+      <button class="app-icon" id="moreLetterCard" type="button">
+        <span class="app-glyph glyph-letter">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2.5"/><path d="m3.5 7.5 8.5 6 8.5-6"/></svg>
+        </span>
+        <span class="app-label">信件</span>
+        <em class="app-badge" id="moreLetterBadge" hidden></em>
+      </button>
+
+      <button class="app-icon" id="moreListenCard" type="button">
+        <span class="app-glyph glyph-music">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>
+        </span>
+        <span class="app-label">一起听歌</span>
+      </button>
     </div>
-    <div class="more-card" id="moreMomentsCard" role="button" tabindex="0">
-      <div class="mc-icon">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="8.5" cy="9" r="1.4"/><path d="m4 17 5-5 4 4 3-3 4 4"/></svg>
-      </div>
-      <div class="mc-info">
-        <b>朋友圈</b>
-        <span>TA 会发动态，你也可以点赞、评论、发自己的动态</span>
-      </div>
-      <span class="letter-badge" id="moreMomentBadge" hidden></span>
-      <span class="badge-soon">打开</span>
-    </div>
-    <p class="hint" style="padding:6px 2px;">更多新功能会陆续放在这里。</p>
+
+    <p class="home-hint">更多应用会陆续上架</p>
   </div>
 </aside>
 
@@ -2050,7 +2171,7 @@ body.theme-mono .tab-item.active svg{color:#141414;}
         id: c.id, name: c.name, avatar: c.avatar || '',
         userName: c.userName, userAvatar: c.userAvatar || '',
         chatBgId: c.chatBgId || '',
-        messages: (c.messages || []).slice(-400), lastId: c.lastId || null,
+        messages: c.messages || [], lastId: c.lastId || null,
         unread: c.unread || 0
       };
     });
@@ -2083,7 +2204,7 @@ body.theme-mono .tab-item.active svg{color:#141414;}
       musicCfg: state.musicCfg,
       notifyOn: !!state.notifyOn,
       keepAlive: !!state.keepAlive,
-      messages: state.messages.slice(-400), lastId: state.lastId,
+      messages: state.messages, lastId: state.lastId,
       songs: state.songs.map(function (s) { return { id: s.id, name: s.name, artist: s.artist, cover: s.cover, url: s.url || '', lrc: s.lrc || '' }; }),
       songIdx: state.songIdx
     };
@@ -2580,7 +2701,61 @@ body.theme-mono .tab-item.active svg{color:#141414;}
     setTimeout(function () { toBottom(false); }, 320);
   }
 
+  /* 长聊天：只渲染最近一页，往上翻再分批补，保证聊天记录能一直留着 */
+  const CHAT_RENDER_PAGE = 300;
+  let chatWindowFrom = 0, chatWindowTo = 0;
+
+  function historyBtn(dir) {
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.className = 'history-more';
+    b.textContent = dir === 'up' ? '查看更早的消息' : '查看更新的消息';
+    b.addEventListener('click', function () {
+      if (dir === 'up') loadOlderChat(); else loadNewerChat();
+    });
+    return b;
+  }
+
+  function renderChatWindow(c, from, to) {
+    if (!c) return;
+    const len = c.messages.length;
+    from = Math.max(0, Math.min(len, from || 0));
+    to = Math.max(from, Math.min(len, to === undefined ? len : to));
+    chatEl.innerHTML = '';
+    if (from > 0) chatEl.appendChild(historyBtn('up'));
+    const frag = document.createDocumentFragment();
+    for (let i = from; i < to; i++) frag.appendChild(buildMessage(c.messages[i]));
+    chatEl.appendChild(frag);
+    if (to < len) chatEl.appendChild(historyBtn('down'));
+    chatWindowFrom = from;
+    chatWindowTo = to;
+  }
+
+  function loadOlderChat() {
+    const c = activeContact();
+    if (!c || chatWindowFrom <= 0) return;
+    const prevH = chatEl.scrollHeight, prevTop = chatEl.scrollTop;
+    renderChatWindow(c, Math.max(0, chatWindowFrom - CHAT_RENDER_PAGE), chatWindowTo);
+    if (typingEl) chatEl.appendChild(typingEl);
+    chatEl.scrollTop = prevTop + (chatEl.scrollHeight - prevH);
+  }
+
+  function loadNewerChat() {
+    const c = activeContact();
+    if (!c || chatWindowTo >= c.messages.length) return;
+    renderChatWindow(c, chatWindowFrom, Math.min(c.messages.length, chatWindowTo + CHAT_RENDER_PAGE));
+    if (typingEl) chatEl.appendChild(typingEl);
+    toBottom(false);
+  }
+
   window.jumpToMessage = function(msgId) {
+    const c = activeContact();
+    if (c) {
+      const idx = c.messages.findIndex(function (m) { return m.id === msgId; });
+      if (idx >= 0 && (idx < chatWindowFrom || idx >= chatWindowTo)) {
+        renderChatWindow(c, Math.max(0, idx - 60), Math.min(c.messages.length, idx + 140));
+      }
+    }
     const el = document.getElementById('msg-' + msgId);
     if (el) {
       el.scrollIntoView({ behavior: 'smooth', block: 'center' });
@@ -2950,13 +3125,16 @@ body.theme-mono .tab-item.active svg{color:#141414;}
     if (!c) return null;
     const msg = { id: uid(), role, type, content, ts: Date.now(), ...extra };
     c.messages.push(msg);
-    if (c.messages.length > 400) c.messages.splice(0, c.messages.length - 400);
     const isActive = c === activeContact();
     if (isActive) {
       state.messages = c.messages;
-      chatEl.appendChild(buildMessage(msg));
-      if (typingEl) chatEl.appendChild(typingEl);
-      toBottom();
+      // 只有当前窗口正好停在最新一条时，才直接追加
+      if (chatWindowTo >= c.messages.length - 1) {
+        chatEl.appendChild(buildMessage(msg));
+        chatWindowTo = c.messages.length;
+        if (typingEl) chatEl.appendChild(typingEl);
+        toBottom();
+      }
     } else {
       if (role === 'char') {
         c.unread = (c.unread || 0) + 1;
@@ -2964,6 +3142,7 @@ body.theme-mono .tab-item.active svg{color:#141414;}
         refreshContactList();
       }
     }
+    updateHomeChatBadge();
     if (role === 'char' && type !== 'call') {
       playMessageSound();
       showSystemNotify(c.name || '梦角', notifyTextOf(msg), { type: 'chat', cid: c.id, mid: msg.id, tag: 'msg-' + c.id });
@@ -4357,9 +4536,9 @@ body.theme-mono .tab-item.active svg{color:#141414;}
   /* 页面切换（底部导航） */
   const drawer = $('drawer');
   const settings = $('settings');
-  const morePage = $('more');
-  const PAGE_MAP = { lib: drawer, set: settings, more: morePage, contacts: $('contacts') };
-  let currentPage = 'chat';
+  const homePage = $('home');
+  const PAGE_MAP = { home: homePage, lib: drawer, set: settings, contacts: $('contacts') };
+  let currentPage = 'home';
 
   document.querySelectorAll('.set-group-header').forEach(header => {
     header.addEventListener('click', () => header.parentElement.classList.toggle('open'));
@@ -4369,6 +4548,54 @@ body.theme-mono .tab-item.active svg{color:#141414;}
     document.querySelectorAll('.tab-item').forEach(b => {
       b.classList.toggle('active', b.dataset.page === page);
     });
+  }
+
+  function greetingText() {
+    const h = new Date().getHours();
+    if (h < 5) return '夜深了';
+    if (h < 11) return '早上好';
+    if (h < 13) return '中午好';
+    if (h < 18) return '下午好';
+    if (h < 23) return '晚上好';
+    return '夜深了';
+  }
+
+  function updateHomeChatBadge() {
+    const b = $('homeChatBadge');
+    if (!b) return;
+    let n = 0;
+    if (state.singleMode) {
+      const c = activeContact();
+      n = (c && c.unread) || 0;
+    } else {
+      state.contacts.forEach(function (c) { n += (c && c.unread) || 0; });
+    }
+    b.hidden = n <= 0;
+    b.textContent = n > 99 ? '99+' : String(n);
+  }
+
+  function renderHome() {
+    const d = new Date();
+    const week = ['周日', '周一', '周二', '周三', '周四', '周五', '周六'][d.getDay()];
+    $('homeDate').textContent = (d.getMonth() + 1) + '月' + d.getDate() + '日 · ' + week;
+    const nm = String(state.userName || '').trim();
+    $('homeGreet').textContent = greetingText() + (nm ? '，' + nm : '');
+    const c = activeContact();
+    let sub = '今天想聊点什么？';
+    if (state.letters.some(function (l) { return l.role !== 'me' && !l.read; })) {
+      sub = '有新的信在等你';
+    } else if (c) {
+      sub = '点「聊天」继续和 ' + (c.name || 'TA') + ' 说话';
+    }
+    $('homeSub').textContent = sub;
+    updateHomeChatBadge();
+    updateLetterBadge();
+    updateMomentBadge();
+  }
+
+  function openHome() {
+    renderHome();
+    homePage.classList.add('show');
   }
 
   function openLib() {
@@ -4385,14 +4612,17 @@ body.theme-mono .tab-item.active svg{color:#141414;}
     $('music').classList.remove('show');
     $('letters').classList.remove('show');
     $('moments').classList.remove('show');
-    if (page === 'lib') {
+    $('chatSearch').classList.remove('show');
+    if (page === 'home') {
+      openHome();
+    } else if (page === 'lib') {
       openLib();
     } else if (page === 'set') {
       updateIdentity(false); syncThemeButtons(); syncReplySettings(); syncCaptureSwitch(); syncSoundSwitch(); syncSingleSwitch();
       renderBgPicker('call'); syncAppearanceInputs();
       settings.classList.add('show');
-    } else if (page === 'more') {
-      morePage.classList.add('show');
+    } else if (page === 'contacts') {
+      openContacts();
     } else if (page === 'chat') {
       if (state.singleMode && activeContact()) {
         // 聊天内容一直挂在页面上，切回来时不用整段重建，避免每次卡顿
@@ -4402,18 +4632,24 @@ body.theme-mono .tab-item.active svg{color:#141414;}
       }
     }
     currentPage = page;
-    setTabActive(page);
+    setTabActive(page === 'chat' || page === 'contacts' ? '' : page);
   }
 
-  function closeAll() { switchPage('chat'); closeModal(); }
+
+  function closeAll() { switchPage('home'); closeModal(); }
 
   document.querySelectorAll('.tab-item').forEach(btn => {
     btn.addEventListener('click', () => switchPage(btn.dataset.page));
   });
   $('btnCloseLib').addEventListener('click', closeAll);
   $('btnCloseSet').addEventListener('click', closeAll);
-  $('btnCloseMore').addEventListener('click', closeAll);
-  document.addEventListener('keydown', function (e) { if (e.key === 'Escape') closeAll(); });
+  $('homeChatIcon').addEventListener('click', function () { switchPage('chat'); });
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape') {
+      if ($('chatSearch').classList.contains('show')) { closeChatSearch(); return; }
+      closeAll();
+    }
+  });
 
   /* 一起听歌 */
   const MUSIC_API = 'https://api.vkeys.cn/v2/music/netease?id=';
@@ -5025,6 +5261,7 @@ body.theme-mono .tab-item.active svg{color:#141414;}
       const c = contactById(row.dataset.cid);
       if (c) paintAvatar(row.querySelector('.avatar'), c.avatar, c.name);
     });
+    updateHomeChatBadge();
   }
 
   function refreshContactList() { renderContactList(); }
@@ -5033,9 +5270,13 @@ body.theme-mono .tab-item.active svg{color:#141414;}
     mirrorActive();
     hideTyping();
     renderContactList();
+    Object.keys(PAGE_MAP).forEach(function (k) { PAGE_MAP[k].classList.remove('show'); });
+    $('music').classList.remove('show');
+    $('chatSearch').classList.remove('show');
     contactsDrawer.classList.add('show');
-    currentPage = 'chat';
-    setTabActive('chat');
+    currentPage = 'contacts';
+    setTabActive('');
+    updateHomeChatBadge();
   }
 
   function openChat(id) {
@@ -5049,18 +5290,17 @@ body.theme-mono .tab-item.active svg{color:#141414;}
     contactsDrawer.classList.remove('show');
     Object.keys(PAGE_MAP).forEach(k => PAGE_MAP[k].classList.remove('show'));
     $('music').classList.remove('show');
+    $('chatSearch').classList.remove('show');
     currentPage = 'chat';
-    setTabActive('chat');
+    setTabActive('');
     updateIdentity(true);
     applyAppearance();
-    chatEl.innerHTML = '';
-    const frag = document.createDocumentFragment();
-    c.messages.forEach(m => frag.appendChild(buildMessage(m)));
-    chatEl.appendChild(frag);
+    renderChatWindow(c, Math.max(0, c.messages.length - CHAT_RENDER_PAGE), c.messages.length);
     if (c.typing) showTyping();
     settleToBottom();
     renderContactList();
     save();
+    updateHomeChatBadge();
     hideAppLoading();
   }
 
@@ -5069,7 +5309,10 @@ body.theme-mono .tab-item.active svg{color:#141414;}
     if (row) openChat(row.dataset.cid);
   });
 
-  $('btnChatBack').addEventListener('click', function () { openContacts(); });
+  $('btnChatBack').addEventListener('click', function () {
+    if (state.singleMode) switchPage('home');
+    else openContacts();
+  });
 
   $('btnAddContact').addEventListener('click', function () {
     openModal('添加联系人',
@@ -5145,6 +5388,89 @@ body.theme-mono .tab-item.active svg{color:#141414;}
 
   $('headerCenter').addEventListener('click', nudgeReply);
   $('btnChatInfo').addEventListener('click', openProfile);
+
+  /* 查找聊天记录 */
+  function searchTextOf(m) {
+    if (!m || m.role === 'sys') return '';
+    if (m.type === 'image') return '[图片]';
+    if (m.type === 'emoji') return '[表情包]';
+    if (m.type === 'call') return '[通话]';
+    if (m.type === 'song') return '[歌曲] ' + (m.content || '');
+    if (m.type === 'letter') return '[信件] ' + (m.content || '');
+    return typeof m.content === 'string' ? m.content : '';
+  }
+
+  function searchSnippet(text, q) {
+    const low = text.toLowerCase();
+    const idx = low.indexOf(q.toLowerCase());
+    if (idx < 0) return esc(text.slice(0, 90));
+    const start = Math.max(0, idx - 28);
+    const end = Math.min(text.length, idx + q.length + 48);
+    const raw = (start ? '…' : '') + text.slice(start, end) + (end < text.length ? '…' : '');
+    const local = raw.toLowerCase().indexOf(q.toLowerCase());
+    if (local < 0) return esc(raw);
+    return esc(raw.slice(0, local)) + '<mark>' + esc(raw.slice(local, local + q.length)) + '</mark>' + esc(raw.slice(local + q.length));
+  }
+
+  function fmtSearchTime(ts) {
+    const d = new Date(ts || 0);
+    return (d.getMonth() + 1) + '月' + d.getDate() + '日 ' + fmtTime(ts);
+  }
+
+  let searchTimer = 0;
+
+  function renderSearchResults() {
+    const box = $('chatSearchResults');
+    const c = activeContact();
+    const q = String($('chatSearchInput').value || '').trim();
+    if (!c) { box.innerHTML = '<p class="search-empty">还没有打开的聊天。</p>'; return; }
+    if (!q) { box.innerHTML = '<p class="search-empty">输入关键字，就能在全部聊天记录里找。</p>'; return; }
+    const hits = [];
+    c.messages.forEach(function (m) {
+      const t = searchTextOf(m);
+      if (t && t.toLowerCase().indexOf(q.toLowerCase()) >= 0) hits.push(m);
+    });
+    if (!hits.length) {
+      box.innerHTML = '<p class="search-empty">没有找到「' + esc(q) + '」</p>';
+      return;
+    }
+    const list = hits.slice(-300).reverse();
+    box.innerHTML = '<p class="search-empty" style="padding:0 2px 6px;text-align:left;font-size:11.5px;">共 ' + hits.length + ' 条，最近的在前面</p>' +
+      list.map(function (m) {
+        const text = searchTextOf(m);
+        return '<button type="button" class="search-result" data-mid="' + esc(m.id) + '">' +
+          '<span class="sr-top"><span class="sr-role">' + (m.role === 'char' ? 'TA' : '我') + '</span>' +
+          '<span>' + fmtSearchTime(m.ts) + '</span></span>' +
+          '<span class="sr-text">' + searchSnippet(text, q) + '</span></button>';
+      }).join('');
+  }
+
+  function openChatSearch() {
+    const page = $('chatSearch');
+    $('chatSearchInput').value = '';
+    $('chatSearchResults').innerHTML = '<p class="search-empty">输入关键字，就能在全部聊天记录里找。</p>';
+    page.classList.add('show');
+    setTimeout(function () { try { $('chatSearchInput').focus(); } catch (e) {} }, 60);
+  }
+
+  function closeChatSearch() {
+    $('chatSearch').classList.remove('show');
+    try { $('chatSearchInput').blur(); } catch (e) {}
+  }
+
+  $('btnChatSearch').addEventListener('click', openChatSearch);
+  $('btnCloseSearch').addEventListener('click', closeChatSearch);
+  $('chatSearchInput').addEventListener('input', function () {
+    clearTimeout(searchTimer);
+    searchTimer = setTimeout(renderSearchResults, 150);
+  });
+  $('chatSearchResults').addEventListener('click', function (e) {
+    const row = e.target.closest('[data-mid]');
+    if (!row) return;
+    const mid = row.dataset.mid;
+    closeChatSearch();
+    window.jumpToMessage(mid);
+  });
 
   $('avatarInput').addEventListener('change', function (e) {
     const f = e.target.files && e.target.files[0];
@@ -5408,11 +5734,12 @@ body.theme-mono .tab-item.active svg{color:#141414;}
   }
 
   function openLetters(focusId) {
-    $('more').classList.add('show');
+    $('home').classList.add('show');
     $('music').classList.remove('show');
     $('moments').classList.remove('show');
-    currentPage = 'more';
-    setTabActive('more');
+    $('chatSearch').classList.remove('show');
+    currentPage = 'home';
+    setTabActive('home');
     let changed = false;
     state.letters.forEach(function (l) { if (l.role !== 'me' && !l.read) { l.read = true; changed = true; } });
     if (changed) save();
@@ -5748,11 +6075,12 @@ body.theme-mono .tab-item.active svg{color:#141414;}
   }
 
   function openMoments(focusId) {
-    $('more').classList.add('show');
+    $('home').classList.add('show');
     $('music').classList.remove('show');
     $('letters').classList.remove('show');
-    currentPage = 'more';
-    setTabActive('more');
+    $('chatSearch').classList.remove('show');
+    currentPage = 'home';
+    setTabActive('home');
     state.momentSeenTs = Date.now();
     save();
     renderMoments();
@@ -6452,7 +6780,7 @@ body.theme-mono .tab-item.active svg{color:#141414;}
   /* 单人模式开关 */
   function applyChatMode() {
     const b = $('btnChatBack');
-    if (b) b.style.display = state.singleMode ? 'none' : 'grid';
+    if (b) b.style.display = 'grid';
   }
   function syncSingleSwitch() {
     $('swSingle').classList.toggle('off', !state.singleMode);
@@ -6623,11 +6951,10 @@ body.theme-mono .tab-item.active svg{color:#141414;}
     syncAppearanceInputs();
     applyFont();
     
-    var bootFrag = document.createDocumentFragment();
-    state.messages.forEach(m => {
-       bootFrag.appendChild(buildMessage(m));
-    });
-    chatEl.appendChild(bootFrag);
+    const bootContact = activeContact();
+    if (bootContact) {
+      renderChatWindow(bootContact, Math.max(0, bootContact.messages.length - CHAT_RENDER_PAGE), bootContact.messages.length);
+    }
     settleToBottom();
     renderContactList();
     updateLetterBadge();
@@ -6660,6 +6987,11 @@ body.theme-mono .tab-item.active svg{color:#141414;}
     updateNotifyBtn();
     updateKeepAliveBtn();
     hideAppLoading();
+
+    // 默认落在主页桌面；从通知冷启动时直接进聊天
+    var notifyRoute = false;
+    try { notifyRoute = /[?&]notify=/.test(location.search); } catch (e) {}
+    if (!notifyRoute) switchPage('home');
 
     if (migratedFromKey) {
       setTimeout(function () {
