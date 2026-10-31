@@ -893,6 +893,9 @@ body.theme-mono .moment-action.liked{color:#141414;}
   padding:8px 18px calc(8px + env(safe-area-inset-bottom,0px));
   background:transparent;
 }
+/* 胶囊导航只留在主页桌面，进入应用后隐藏 */
+body.nav-off .tabbar{display:none;}
+body.nav-off .drawer{height:calc(var(--app-h) - env(safe-area-inset-bottom,0px));}
 .tab-pill{
   height:56px;border-radius:99px;
   border:1px solid var(--glass-line);
@@ -4550,6 +4553,14 @@ body.theme-night .glyph-music{background:linear-gradient(160deg,#4a2338,#3a1b2c)
     });
   }
 
+  /* 只有主页桌面显示底部胶囊，进应用后让位给内容 */
+  function syncNav() {
+    const appOpen = ['drawer', 'settings', 'contacts', 'letters', 'moments', 'music'].some(function (id) {
+      return $(id).classList.contains('show');
+    });
+    document.body.classList.toggle('nav-off', currentPage !== 'home' || appOpen);
+  }
+
   function greetingText() {
     const h = new Date().getHours();
     if (h < 5) return '夜深了';
@@ -4633,6 +4644,7 @@ body.theme-night .glyph-music{background:linear-gradient(160deg,#4a2338,#3a1b2c)
     }
     currentPage = page;
     setTabActive(page === 'chat' || page === 'contacts' ? '' : page);
+    syncNav();
   }
 
 
@@ -5065,6 +5077,7 @@ body.theme-night .glyph-music{background:linear-gradient(160deg,#4a2338,#3a1b2c)
   function openMusic() {
     renderSongList(); updatePlayerUI();
     musicPage.classList.add('show');
+    syncNav();
   }
 
   audio.addEventListener('timeupdate', function () {
@@ -5091,7 +5104,7 @@ body.theme-night .glyph-music{background:linear-gradient(160deg,#4a2338,#3a1b2c)
   });
 
   $('moreListenCard').addEventListener('click', openMusic);
-  $('btnCloseMusic').addEventListener('click', function () { musicPage.classList.remove('show'); });
+  $('btnCloseMusic').addEventListener('click', function () { musicPage.classList.remove('show'); syncNav(); });
   $('btnOpenImport').addEventListener('click', openImportModal);
   $('btnMusicCfg').addEventListener('click', openMusicSettings);
   $('btnPlay').addEventListener('click', function (e) { e.stopPropagation(); togglePlay(); });
@@ -5277,6 +5290,7 @@ body.theme-night .glyph-music{background:linear-gradient(160deg,#4a2338,#3a1b2c)
     currentPage = 'contacts';
     setTabActive('');
     updateHomeChatBadge();
+    syncNav();
   }
 
   function openChat(id) {
@@ -5301,6 +5315,7 @@ body.theme-night .glyph-music{background:linear-gradient(160deg,#4a2338,#3a1b2c)
     renderContactList();
     save();
     updateHomeChatBadge();
+    syncNav();
     hideAppLoading();
   }
 
@@ -5745,6 +5760,7 @@ body.theme-night .glyph-music{background:linear-gradient(160deg,#4a2338,#3a1b2c)
     if (changed) save();
     renderLetters(focusId);
     $('letters').classList.add('show');
+    syncNav();
     updateLetterBadge();
     if (focusId) {
       setTimeout(function () {
@@ -5810,7 +5826,7 @@ body.theme-night .glyph-music{background:linear-gradient(160deg,#4a2338,#3a1b2c)
   }
 
   $('moreLetterCard').addEventListener('click', function () { openLetters(); });
-  $('btnCloseLetters').addEventListener('click', function () { $('letters').classList.remove('show'); });
+  $('btnCloseLetters').addEventListener('click', function () { $('letters').classList.remove('show'); syncNav(); });
   $('btnLetterCfg').addEventListener('click', openLetterSettings);
   $('btnWriteLetter').addEventListener('click', function () { openLetterComposer(''); });
   letterListEl.addEventListener('click', function (e) {
@@ -6085,6 +6101,7 @@ body.theme-night .glyph-music{background:linear-gradient(160deg,#4a2338,#3a1b2c)
     save();
     renderMoments();
     $('moments').classList.add('show');
+    syncNav();
     updateMomentBadge();
     momentListEl.scrollTop = 0;
     if (focusId) {
@@ -6273,7 +6290,7 @@ body.theme-night .glyph-music{background:linear-gradient(160deg,#4a2338,#3a1b2c)
   });
 
   $('moreMomentsCard').addEventListener('click', function () { openMoments(); });
-  $('btnCloseMoments').addEventListener('click', function () { $('moments').classList.remove('show'); });
+  $('btnCloseMoments').addEventListener('click', function () { $('moments').classList.remove('show'); syncNav(); });
   $('btnMomentPost').addEventListener('click', openMomentComposer);
   $('btnMomentCfg').addEventListener('click', openMomentSettings);
   momentListEl.addEventListener('click', function (e) {
