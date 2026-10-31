@@ -456,8 +456,10 @@ body.theme-mono .quote-box{border-left-color:#141414;}
   opacity:0;pointer-events:none;transition:opacity .3s;
   backdrop-filter:blur(10px); -webkit-backdrop-filter:blur(10px);
   border:1px solid rgba(255,255,255,.1);
+  touch-action:none;user-select:none;
 }
 .call-pill.show{opacity:1;pointer-events:auto;}
+.call-pill.dragging{transition:none;}
 .pill-dot{width:8px;height:8px;border-radius:50%;background:#34c759;animation:blink 1s infinite;}
 .pill-hangup{
   background:var(--call-btn-red);color:#fff;border:none;
@@ -791,6 +793,11 @@ body.theme-mono .tab-item.active svg{color:#141414;}
   box-shadow:0 12px 34px rgba(0,0,0,.4);max-width:86vw;text-align:center;
 }
 .toast.show{opacity:1;transform:translate(-50%,0);}
+.toast.top{
+  bottom:auto;top:calc(env(safe-area-inset-top, 0px) + 78px);
+  transform:translate(-50%,-16px);
+}
+.toast.top.show{transform:translate(-50%,0);}
 
 /* 管理分组列表样式 */
 .group-manage-row {
@@ -1285,11 +1292,13 @@ body.theme-mono .tab-item.active svg{color:#141414;}
   const sleep = ms => new Promise(r => setTimeout(r, ms));
 
   let toastTimer = null;
-  function toast(text) {
+  function toast(text, opts) {
+    opts = opts || {};
     let el = document.querySelector('.toast');
     if (!el) { el = document.createElement('div'); el.className = 'toast'; document.body.appendChild(el); }
+    el.className = 'toast' + (opts.top ? ' top' : '');
     el.textContent = text; void el.offsetWidth; el.classList.add('show');
-    clearTimeout(toastTimer); toastTimer = setTimeout(() => el.classList.remove('show'), 2200);
+    clearTimeout(toastTimer); toastTimer = setTimeout(() => el.classList.remove('show'), opts.ms || 2200);
   }
 
   function fmtTime(ts) {
@@ -1297,6 +1306,7 @@ body.theme-mono .tab-item.active svg{color:#141414;}
     return String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0');
   }
   function formatDuration(seconds) {
+    seconds = Math.max(0, Math.floor(seconds || 0));
     const m = Math.floor(seconds / 60);
     const s = seconds % 60;
     return (m < 10 ? '0' + m : m) + ':' + (s < 10 ? '0' + s : s);
@@ -1919,19 +1929,17 @@ body.theme-mono .tab-item.active svg{color:#141414;}
   function updateSendState() { btnSend.disabled = busy || !input.value.trim(); }
 
   /* 梦角截取我的消息：概率由系统固定，不对外暴露 */
-  const CAPTURE_PROB = 20;
-  const CAPTURE_GROUP = '截取于你';
+  const CAPTURE_PROB = 25;
   function maybeCaptureFromUser(text) {
     if (!state.captureEnabled) return;
     const t = String(text).trim();
     if (t.length < 2 || t.length > 120) return;
     if (state.cards.some(c => c.text.trim() === t)) return;
     if (Math.random() * 100 >= CAPTURE_PROB) return;
-    ensureGroup(CAPTURE_GROUP);
-    state.cards.push({ id: uid(), text: t, group: CAPTURE_GROUP, off: false, source: 'capture', capturedAt: Date.now() });
+    state.cards.push({ id: uid(), text: t, group: '', off: false, source: 'capture', capturedAt: Date.now() });
     save();
     if (currentPage === 'lib' && ui.currentTab === 'text') renderTextLib();
-    toast('梦角悄悄把你这句话收进了字卡库');
+    toast('梦角截取了你的消息，已存进字卡库 · 未分组', { top: true, ms: 3200 });
   }
 
   function handleUserSend() {
@@ -2111,11 +2119,19 @@ body.theme-mono .tab-item.active svg{color:#141414;}
   const callStatus = $('callStatus');
   const callPill = $('callPill');
   const pillTime = $('pillTime');
+  let pillDrag = null, pillMoved = false;
+
+  function resetPillPos() {
+    callPill.style.left = '50%';
+    callPill.style.top = 'calc(var(--header-h) + 8px)';
+    callPill.style.transform = '';
+  }
 
   function startCall(type) {
     callState = type;
     callDuration = 0;
     callPill.classList.remove('show');
+    resetPillPos();
     callScreen.classList.add('show');
     btnAccept.classList.add('hidden');
     btnReject.classList.add('hidden');
@@ -2176,9 +2192,49 @@ body.theme-mono .tab-item.active svg{color:#141414;}
 
   callPill.addEventListener('click', (e) => {
     if (e.target.closest('#pillHangup')) return;
+    if (pillMoved) { pillMoved = false; return; }
     callPill.classList.remove('show');
     callScreen.classList.add('show');
   });
+
+  callPill.addEventListener('pointerdown', function (e) {
+    if (e.target.closest('#pillHangup')) return;
+    const appEl = document.querySelector('.app');
+    if (!appEl) return;
+    const ar = appEl.getBoundingClientRect();
+    const pr = callPill.getBoundingClientRect();
+    callPill.classList.add('dragging');
+    callPill.style.transform = 'none';
+    callPill.style.left = (pr.left - ar.left) + 'px';
+    callPill.style.top = (pr.top - ar.top) + 'px';
+    pillDrag = { dx: e.clientX - pr.left, dy: e.clientY - pr.top, moved: false };
+    pillMoved = false;
+    try { callPill.setPointerCapture(e.pointerId); } catch (err) {}
+  });
+
+  callPill.addEventListener('pointermove', function (e) {
+    if (!pillDrag) return;
+    const appEl = document.querySelector('.app');
+    if (!appEl) return;
+    const ar = appEl.getBoundingClientRect();
+    const pr = callPill.getBoundingClientRect();
+    let x = e.clientX - pillDrag.dx - ar.left;
+    let y = e.clientY - pillDrag.dy - ar.top;
+    x = Math.max(6, Math.min(ar.width - pr.width - 6, x));
+    y = Math.max(6, Math.min(ar.height - pr.height - 6, y));
+    callPill.style.left = x + 'px';
+    callPill.style.top = y + 'px';
+    pillDrag.moved = true;
+  });
+
+  function endPillDrag() {
+    if (!pillDrag) return;
+    pillMoved = pillDrag.moved;
+    pillDrag = null;
+    callPill.classList.remove('dragging');
+  }
+  callPill.addEventListener('pointerup', endPillDrag);
+  callPill.addEventListener('pointercancel', endPillDrag);
 
   $('pillHangup').addEventListener('click', () => {
     clearTimeout(callTimer);
@@ -2261,6 +2317,7 @@ body.theme-mono .tab-item.active svg{color:#141414;}
   function renderTextLib() {
     // 渲染胶囊
     let chipsHtml = `<button class="chip ${ui.activeGroup === '全部' ? 'active' : ''}" data-ag="全部">全部</button>`;
+    chipsHtml += `<button class="chip ${ui.activeGroup === '' ? 'active' : ''}" data-ag="">未分组</button>`;
     state.groups.forEach(g => {
        chipsHtml += `<button class="chip ${ui.activeGroup === g.name ? 'active' : ''}" data-ag="${esc(g.name)}">${esc(g.name)}</button>`;
     });
@@ -2763,11 +2820,6 @@ body.theme-mono .tab-item.active svg{color:#141414;}
   audio.preload = 'metadata';
   let musicPlaying = false;
 
-  function fmtTime(sec) {
-    sec = Math.max(0, Math.floor(sec || 0));
-    return String(Math.floor(sec / 60)).padStart(2, '0') + ':' + String(sec % 60).padStart(2, '0');
-  }
-
   function normHttp(url) { return typeof url === 'string' ? url.replace(/^http:/, 'https:') : ''; }
 
   function parseSongIds(text) {
@@ -2932,7 +2984,7 @@ body.theme-mono .tab-item.active svg{color:#141414;}
   audio.addEventListener('timeupdate', function () {
     const d = audio.duration || 0, c = audio.currentTime || 0;
     $('playerFill').style.width = d ? (c / d * 100) + '%' : '0%';
-    $('playerTime').textContent = fmtTime(c) + ' / ' + fmtTime(d);
+    $('playerTime').textContent = formatDuration(c) + ' / ' + formatDuration(d);
   });
   audio.addEventListener('ended', function () {
     if (state.songs.length > 1) playSong((state.songIdx + 1) % state.songs.length);
