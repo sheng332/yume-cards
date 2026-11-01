@@ -351,10 +351,26 @@ body.theme-wechat .msg-banner .banner-avatar{border-radius:6px;}
 .msg.me .avatar-sm{background-image:linear-gradient(135deg,#7bc8ff,#5ea8ff);}
 
 .msg-content{
+  position:relative;
   display:flex;flex-direction:column;gap:3px;
   align-items:flex-start;max-width:min(var(--msg-max,78%), calc(100% - var(--avatar-sm-size,36px) - 20px));
 }
 .msg.me .msg-content{align-items:flex-end;}
+
+/* 情绪小气泡：TA 的贴在气泡右上角，我的贴在左上角 */
+.mood-chip{
+  position:absolute;z-index:2;top:-9px;
+  max-width:160px;padding:2px 8px;border-radius:99px;
+  background:var(--panel-bg);border:1px solid var(--line);
+  color:var(--text);font-size:10.5px;line-height:1.55;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+  box-shadow:0 2px 7px rgba(0,0,0,.07);
+  pointer-events:none;
+  animation:moodPop .3s cubic-bezier(.22,1,.36,1) both;
+}
+.msg.char .mood-chip{right:2px;border-bottom-right-radius:4px;}
+.msg.me .mood-chip{left:2px;border-bottom-left-radius:4px;}
+@keyframes moodPop{from{opacity:0;transform:translateY(5px) scale(.86);}to{opacity:1;transform:none;}}
 
 .bubble{
   padding:9px 14px;font-size:var(--msg-font,15px);line-height:1.6;
@@ -1231,6 +1247,20 @@ body.theme-night .glyph-music{background:linear-gradient(160deg,#4a2338,#3a1b2c)
   font-size:24px;user-select:none;
 }
 .char-item .cb{position:absolute;top:4px;left:4px;}
+/* 情绪卡库 */
+.mood-grid{display:flex;flex-wrap:wrap;gap:8px;padding:4px 2px 6px;}
+.mood-item{
+  position:relative;display:inline-flex;align-items:center;max-width:100%;
+  padding:6px 12px;border-radius:99px;border:1px solid var(--line);
+  background:var(--panel-bg);color:var(--text);
+  font-size:12.5px;line-height:1.5;cursor:pointer;transition:opacity .15s;
+}
+.mood-item.off{opacity:.42;text-decoration:line-through;}
+.mood-x{
+  position:absolute;top:-6px;right:-5px;width:16px;height:16px;border-radius:50%;
+  display:grid;place-items:center;font-style:normal;font-size:11px;line-height:1;
+  background:var(--app-bg);border:1px solid var(--line);color:var(--muted);
+}
 
 /* 开关 */
 .sw{
@@ -1680,6 +1710,7 @@ body.theme-night .glyph-music{background:linear-gradient(160deg,#4a2338,#3a1b2c)
     <button class="lib-tab active" data-tab="text">字卡</button>
     <button class="lib-tab" data-tab="emoji">表情包</button>
     <button class="lib-tab" data-tab="char">Emoji</button>
+    <button class="lib-tab" data-tab="mood">情绪</button>
   </div>
 
   <div id="textToolbar">
@@ -1716,6 +1747,16 @@ body.theme-night .glyph-music{background:linear-gradient(160deg,#4a2338,#3a1b2c)
       <button class="chip" data-cact="add">批量添加 Emoji</button>
       <button class="chip" data-cact="delete">删除选中</button>
     </div>
+  </div>
+
+  <div id="moodToolbar" style="display:none;">
+    <div class="lib-actions" id="moodActions">
+      <button class="chip" data-mact="add">添加情绪卡</button>
+      <button class="chip" data-mact="reset">恢复默认</button>
+      <button class="chip" data-mact="enableall">全部启用</button>
+      <button class="chip" data-mact="disableall">全部停用</button>
+    </div>
+    <p class="hint" style="margin:8px 2px 0;font-size:11.5px;line-height:1.65;color:var(--muted);">聊天时 TA 会从这里抽一张小气泡，贴在自己气泡的右上角，或贴在你刚发的消息左上角。点卡片可启用 / 停用，点右上角 × 删除。</p>
   </div>
 
   <div class="lib-list" id="libList"></div>
@@ -2179,6 +2220,13 @@ body.theme-night .glyph-music{background:linear-gradient(160deg,#4a2338,#3a1b2c)
     '关心': ['早点休息，别熬夜。', '多喝水。', '有不开心的记得告诉我。', '天冷记得加衣服。']
   };
 
+  /* 情绪小气泡的默认字卡：情绪词 + 颜文字 + emoji */
+  const MOOD_SEEDS = [
+    '开心', '有点想你了', '害羞', '偷偷开心', '委屈', '安心', '心软', '小得意',
+    '(๑•̀ㅂ•́)و✧', '(｡•́︿•̀｡)', '(๑>؂<๑)', '(*^▽^*)', 'qwq', '(˶ᵔ ᵕ ᵔ˶)', '>_<', 'ovo',
+    '💗', '✨', '🥺', '😊', '🌙', '🍃'
+  ];
+
   function uid() { return 'm' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6); }
   function esc(s) {
     return String(s).replace(/[&<>"']/g, m => ({
@@ -2372,6 +2420,7 @@ body.theme-night .glyph-music{background:linear-gradient(160deg,#4a2338,#3a1b2c)
       groups: state.groups, cards: state.cards,
       stickers: lite ? state.stickers.map(s => ({ id: s.id })) : state.stickers,
       chars: state.chars,
+      moodCards: state.moodCards,
       contacts: contacts, activeId: state.activeId,
       letters: state.letters.slice(0, 50), letterCfg: state.letterCfg,
       moments: state.moments.slice(0, 50), momentCfg: state.momentCfg, momentSeenTs: state.momentSeenTs,
@@ -2550,6 +2599,7 @@ body.theme-night .glyph-music{background:linear-gradient(160deg,#4a2338,#3a1b2c)
     if (Array.isArray(d.cards)) state.cards = d.cards;
     if (Array.isArray(d.stickers)) state.stickers = d.stickers;
     if (Array.isArray(d.chars)) state.chars = d.chars;
+    if (Array.isArray(d.moodCards)) state.moodCards = d.moodCards;
     if (Array.isArray(d.contacts)) state.contacts = d.contacts;
     if (typeof d.activeId === 'string') state.activeId = d.activeId;
     if (Array.isArray(d.letters)) state.letters = d.letters;
@@ -2609,6 +2659,14 @@ body.theme-night .glyph-music{background:linear-gradient(160deg,#4a2338,#3a1b2c)
     if (!Array.isArray(state.cards)) state.cards = [];
     if (!Array.isArray(state.stickers)) state.stickers = [];
     if (!Array.isArray(state.chars)) state.chars = [];
+    if (!Array.isArray(state.moodCards)) {
+      state.moodCards = MOOD_SEEDS.map(function (t) { return { id: uid(), text: t, off: false }; });
+    }
+    state.moodCards = state.moodCards.filter(m => m && typeof m === 'object' && typeof m.text === 'string' && m.text.trim());
+    state.moodCards.forEach(function (m) {
+      if (!m.id) m.id = uid();
+      if (typeof m.off !== 'boolean') m.off = false;
+    });
     if (!Array.isArray(state.messages)) state.messages = [];
     if (!Array.isArray(state.chatBgs)) state.chatBgs = [];
     if (!Array.isArray(state.callBgs)) state.callBgs = [];
@@ -2847,6 +2905,50 @@ body.theme-night .glyph-music{background:linear-gradient(160deg,#4a2338,#3a1b2c)
       if (contact === activeContact()) state.lastId = card.id;
     } else state.lastId = card.id;
     return card;
+  }
+
+  /* 情绪小气泡：从「情绪」字卡库抽一张，贴到气泡角上 */
+  const MOOD_SELF_PROB = 0.34;   // TA 给自己的气泡贴
+  const MOOD_REACT_PROB = 0.42;  // TA 看到你的消息后，贴在你的气泡上
+
+  function moodPool() {
+    return state.moodCards.filter(m => m && !m.off && typeof m.text === 'string' && m.text.trim());
+  }
+  function pickMood() {
+    const pool = moodPool();
+    if (!pool.length) return null;
+    return pool[Math.floor(Math.random() * pool.length)];
+  }
+  function addSelfMood(extra) {
+    if (Math.random() >= MOOD_SELF_PROB) return extra;
+    const m = pickMood();
+    if (m) extra.mood = { text: m.text };
+    return extra;
+  }
+  /* 只贴最近一轮里你刚发的那条，且这条还没被贴过 */
+  function maybeMoodReact(c) {
+    if (!c || Math.random() >= MOOD_REACT_PROB) return;
+    if (!moodPool().length) return;
+    let target = null;
+    for (let i = c.messages.length - 1; i >= 0; i--) {
+      const m = c.messages[i];
+      if (m.role === 'sys') continue;
+      if (m.role === 'char') break;
+      if (m.role === 'me' && m.type === 'text' && !m.isRecalled) { target = m; break; }
+    }
+    if (!target || target.mood) return;
+    const picked = pickMood();
+    if (!picked) return;
+    target.mood = { text: picked.text };
+    const el = document.getElementById('msg-' + target.id);
+    const box = el ? el.querySelector('.msg-content') : null;
+    if (box && !box.querySelector('.mood-chip')) {
+      const chip = document.createElement('div');
+      chip.className = 'mood-chip';
+      chip.textContent = target.mood.text;
+      box.appendChild(chip);
+    }
+    save();
   }
 
   function buildCombinedText() {
@@ -3122,6 +3224,13 @@ body.theme-night .glyph-music{background:linear-gradient(160deg,#4a2338,#3a1b2c)
 
     content.appendChild(bubble);
     content.appendChild(time);
+
+    if (msg.mood && typeof msg.mood.text === 'string' && msg.mood.text.trim()) {
+      const mood = document.createElement('div');
+      mood.className = 'mood-chip';
+      mood.textContent = msg.mood.text;
+      content.appendChild(mood);
+    }
 
     if (msg.role === 'char') { wrap.appendChild(av); wrap.appendChild(content); }
     else { wrap.appendChild(content); wrap.appendChild(av); }
@@ -3808,6 +3917,8 @@ body.theme-night .glyph-music{background:linear-gradient(160deg,#4a2338,#3a1b2c)
       c.busy = false; updateSendState(); return;
     }
 
+    maybeMoodReact(c);
+
     const count = Math.floor(Math.random() * (state.maxReply - state.minReply + 1)) + state.minReply;
 
     for (let i = 0; i < count; i++) {
@@ -3828,7 +3939,7 @@ body.theme-night .glyph-music{background:linear-gradient(160deg,#4a2338,#3a1b2c)
 
       if (sendSticker) {
         const emo = stickerPool[Math.floor(Math.random() * stickerPool.length)];
-        const msg = pushMessageTo(c, 'char', 'emoji', emo.url);
+        const msg = pushMessageTo(c, 'char', 'emoji', emo.url, addSelfMood({}));
         c.roundSent = true;
         checkRecall(msg, textPool, c);
       } else if (textPool.length > 0) {
@@ -3853,7 +3964,7 @@ body.theme-night .glyph-music{background:linear-gradient(160deg,#4a2338,#3a1b2c)
              quoteObj = { id: randomMyMsg.id, text: randomMyMsg.content, role: 'me' };
           }
 
-          const msg = pushMessageTo(c, 'char', 'text', text, { quote: quoteObj });
+          const msg = pushMessageTo(c, 'char', 'text', text, addSelfMood({ quote: quoteObj }));
           c.roundSent = true;
           checkRecall(msg, textPool, c);
         }
@@ -3901,7 +4012,7 @@ body.theme-night .glyph-music{background:linear-gradient(160deg,#4a2338,#3a1b2c)
     if (state.chars.length && Math.random() * 100 < state.charProb) {
       text += state.chars[Math.floor(Math.random() * state.chars.length)];
     }
-    pushMessageTo(c, 'char', 'text', text);
+    pushMessageTo(c, 'char', 'text', text, addSelfMood({}));
     return true;
   }
   function checkProactiveDue() {
@@ -4320,6 +4431,7 @@ body.theme-night .glyph-music{background:linear-gradient(160deg,#4a2338,#3a1b2c)
       $('textToolbar').style.display = ui.currentTab === 'text' ? 'block' : 'none';
       $('emojiToolbar').style.display = ui.currentTab === 'emoji' ? 'block' : 'none';
       $('charToolbar').style.display = ui.currentTab === 'char' ? 'block' : 'none';
+      $('moodToolbar').style.display = ui.currentTab === 'mood' ? 'block' : 'none';
       
       ui.manage = false; ui.emojiManage = false; ui.charManage = false;
       ui.sel.clear(); ui.emojiSel.clear(); ui.charSel.clear();
@@ -4332,7 +4444,8 @@ body.theme-night .glyph-music{background:linear-gradient(160deg,#4a2338,#3a1b2c)
   function renderLib() {
     if (ui.currentTab === 'text') renderTextLib();
     else if (ui.currentTab === 'emoji') renderStickerLib();
-    else renderCharLib();
+    else if (ui.currentTab === 'char') renderCharLib();
+    else renderMoodLib();
   }
 
   function renderTextLib() {
@@ -4447,6 +4560,47 @@ body.theme-night .glyph-music{background:linear-gradient(160deg,#4a2338,#3a1b2c)
       '<button class="chip danger" data-cact="batchdel" ' + (n ? '' : 'disabled') + '>删除选中</button>';
   }
 
+  function renderMoodLib() {
+    if (!state.moodCards.length) {
+      libList.innerHTML = '<div class="empty">还没有情绪卡，点上方「添加情绪卡」或「恢复默认」</div>';
+    } else {
+      let html = '<div class="mood-grid">';
+      state.moodCards.forEach(function (m) {
+        html += '<button class="mood-item ' + (m.off ? 'off' : '') + '" type="button" data-mid="' + m.id + '">' +
+          '<span>' + esc(m.text) + '</span>' +
+          '<i class="mood-x" data-md="' + m.id + '" title="删除">×</i></button>';
+      });
+      html += '</div>';
+      libList.innerHTML = html;
+    }
+    const on = state.moodCards.filter(m => !m.off).length;
+    libFoot.innerHTML = '<span class="count">共 ' + state.moodCards.length + ' 张 · 可用 ' + on + ' 张</span>';
+  }
+
+  function openAddMood() {
+    openModal('添加情绪卡',
+      '<textarea id="moodTextInput" class="modal-ta" style="min-height:72px" placeholder="颜文字、emoji 或一句心情，比如「开心」「(๑•̀ㅂ•́)و✧」「🥺」"></textarea>',
+      '添加',
+      function () {
+        const t = ($('moodTextInput').value || '').trim();
+        if (!t) { toast('写点什么吧'); return false; }
+        if (t.length > 24) { toast('短一点更容易贴，最多 24 个字'); return false; }
+        if (state.moodCards.some(m => m.text.trim() === t)) { toast('已经有这张了'); return false; }
+        state.moodCards.push({ id: uid(), text: t, off: false });
+        save(); renderMoodLib(); toast('已添加');
+      });
+  }
+
+  function restoreMoodDefaults() {
+    const exists = new Set(state.moodCards.map(m => m.text.trim()));
+    let added = 0;
+    MOOD_SEEDS.forEach(function (t) {
+      if (!exists.has(t)) { state.moodCards.push({ id: uid(), text: t, off: false }); added++; }
+    });
+    save(); renderMoodLib();
+    toast(added ? '已补回 ' + added + ' 张默认情绪卡' : '默认情绪卡都在了');
+  }
+
   libList.addEventListener('click', function (e) {
     if (ui.currentTab === 'text') {
       const sw = e.target.closest('[data-sw]');
@@ -4481,6 +4635,17 @@ body.theme-night .glyph-music{background:linear-gradient(160deg,#4a2338,#3a1b2c)
           if (ui.charSel.has(ch)) ui.charSel.delete(ch); else ui.charSel.add(ch);
           renderCharLib();
         }
+      }
+    } else if (ui.currentTab === 'mood') {
+      const del = e.target.closest('[data-md]');
+      if (del) {
+        state.moodCards = state.moodCards.filter(m => m.id !== del.dataset.md);
+        save(); renderMoodLib(); return;
+      }
+      const item = e.target.closest('[data-mid]');
+      if (item) {
+        const m = state.moodCards.find(x => x.id === item.dataset.mid);
+        if (m) { m.off = !m.off; save(); renderMoodLib(); }
       }
     }
   });
@@ -4548,6 +4713,16 @@ body.theme-night .glyph-music{background:linear-gradient(160deg,#4a2338,#3a1b2c)
       ui.charManage = !ui.charManage; if (!ui.charManage) ui.charSel.clear();
       b.classList.toggle('active', ui.charManage); renderCharLib();
     } else if (act === 'add') { openAddChars(); }
+  });
+
+  $('moodActions').addEventListener('click', function (e) {
+    const b = e.target.closest('button[data-mact]');
+    if (!b) return;
+    const act = b.dataset.mact;
+    if (act === 'add') openAddMood();
+    else if (act === 'reset') restoreMoodDefaults();
+    else if (act === 'enableall') { state.moodCards.forEach(m => { m.off = false; }); save(); renderMoodLib(); }
+    else if (act === 'disableall') { state.moodCards.forEach(m => { m.off = true; }); save(); renderMoodLib(); }
   });
 
   $('emojiUploadInput').addEventListener('change', function(e) {
