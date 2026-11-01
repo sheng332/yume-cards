@@ -5735,8 +5735,6 @@ body.theme-night .glyph-music{background:linear-gradient(160deg,#4a2338,#3a1b2c)
       '</div>' +
       '<label class="field"><span>TA 的名字</span><input id="pfCharName" maxlength="12" placeholder="梦角"></label>' +
       '<label class="field"><span>我的名字</span><input id="pfUserName" maxlength="12" placeholder="我"></label>' +
-      '<div class="field"><span>这个联系人的聊天背景（只对它生效）</span><div class="bg-grid" id="pfBgGrid"></div>' +
-      '<div class="lib-actions" style="margin:8px 0 0;"><button class="chip" id="pfAddBg">导入背景图</button></div></div>' +
       '<div class="field"><span>情头库 · 给 TA 和你</span>' +
         '<div class="pair-grid" id="pfPairGrid"></div>' +
         '<div class="pair-add">' +
@@ -5749,7 +5747,7 @@ body.theme-night .glyph-music{background:linear-gradient(160deg,#4a2338,#3a1b2c)
       '</div>' +
       '<div class="field" style="flex-direction:row;align-items:center;justify-content:space-between;gap:14px;">' +
         '<div style="display:flex;flex-direction:column;gap:3px;min-width:0;">' +
-          '<span style="font-size:13px;color:var(--text);">允许 TA 自己换情头</span>' +
+          '<span>允许 TA 自己换情头</span>' +
           '<span class="hint">开启后，TA 会在 1–8 小时内随机挑个时间换一对。</span>' +
         '</div>' +
         '<button class="sw" id="pfAutoAvatar" aria-label="自动换情头开关"></button>' +
@@ -5761,7 +5759,9 @@ body.theme-night .glyph-music{background:linear-gradient(160deg,#4a2338,#3a1b2c)
           '<button class="chip" type="button" data-freq="3">一天 3 次</button>' +
         '</div>' +
         '<span class="hint">每次间隔随机 1–8 小时；也有概率这次不换，等下个时段。</span>' +
-      '</div>',
+      '</div>' +
+      '<div class="field"><span>这个联系人的聊天背景（只对它生效）</span><div class="bg-grid" id="pfBgGrid"></div>' +
+      '<div class="lib-actions" style="margin:8px 0 0;"><button class="chip" id="pfAddBg">导入背景图</button></div></div>',
       '保存', function () {
         c.name = ($('pfCharName') ? $('pfCharName').value.trim() : '');
         c.userName = ($('pfUserName') ? $('pfUserName').value.trim() : '');
