@@ -1649,6 +1649,7 @@ body.theme-night .glyph-music{background:linear-gradient(160deg,#4a2338,#3a1b2c)
 <!-- ============ 联系人列表 ============ -->
 <aside class="drawer" id="contacts">
   <div class="drawer-head">
+    <button class="icon-btn search-back" id="btnCloseContacts" aria-label="返回主页">←</button>
     <h2>聊天</h2>
     <button class="icon-btn" id="btnAddContact" title="添加联系人">＋</button>
   </div>
@@ -5683,6 +5684,8 @@ body.theme-night .glyph-music{background:linear-gradient(160deg,#4a2338,#3a1b2c)
     syncNav();
     hideAppLoading();
   }
+
+  $('btnCloseContacts').addEventListener('click', function () { switchPage('home'); });
 
   contactListEl.addEventListener('click', function (e) {
     const row = e.target.closest('[data-cid]');
