@@ -285,6 +285,30 @@ body.theme-wechat .msg-banner .banner-avatar{border-radius:6px;}
 .pf-person span{font-size:12px;color:var(--muted);}
 .pf-person .avatar{width:56px;height:56px;font-size:20px;}
 
+/* 情头库 */
+.pair-grid{display:flex;flex-wrap:wrap;gap:8px;min-height:6px;}
+.pair-card{
+  position:relative;display:flex;align-items:center;padding:5px 8px 5px 6px;
+  border-radius:14px;border:1px solid var(--line);background:var(--glass);
+}
+.pair-card img{width:31px;height:31px;border-radius:50%;object-fit:cover;border:2px solid var(--app-bg);display:block;}
+.pair-card img.pair-ta{margin-left:-10px;}
+.pair-del{
+  position:absolute;top:-6px;right:-6px;width:18px;height:18px;padding:0;
+  border-radius:50%;border:1px solid var(--line);background:var(--drawer-bg);
+  color:var(--muted);font-size:11px;line-height:1;cursor:pointer;
+}
+.pair-add{display:flex;flex-wrap:wrap;gap:7px;align-items:center;}
+.pair-add .chip{position:relative;overflow:hidden;}
+.pair-draft{display:flex;align-items:center;gap:5px;margin-right:2px;}
+.pair-thumb{
+  display:grid;place-items:center;width:34px;height:34px;border-radius:50%;overflow:hidden;
+  border:1px dashed var(--line);color:var(--muted);font-size:15px;background:rgba(255,255,255,.06);
+}
+.pair-thumb img{width:100%;height:100%;object-fit:cover;display:block;}
+.pair-draft .pair-link{font-size:11px;color:var(--muted);}
+.pair-empty{font-size:11.5px;color:var(--muted);}
+
 
 /* ===================== 聊天区 ===================== */
 .chat{
@@ -2319,7 +2343,8 @@ body.theme-night .glyph-music{background:linear-gradient(160deg,#4a2338,#3a1b2c)
         userName: c.userName, userAvatar: c.userAvatar || '',
         chatBgId: c.chatBgId || '',
         messages: c.messages || [], lastId: c.lastId || null,
-        unread: c.unread || 0
+        unread: c.unread || 0,
+        avatarPairs: c.avatarPairs || [], autoAvatar: c.autoAvatar || null
       };
     });
     return {
@@ -2672,6 +2697,13 @@ body.theme-night .glyph-music{background:linear-gradient(160deg,#4a2338,#3a1b2c)
       if (typeof c.userAvatar !== 'string') c.userAvatar = '';
       if (typeof c.chatBgId !== 'string') c.chatBgId = '';
       if (typeof c.unread !== 'number' || !isFinite(c.unread)) c.unread = 0;
+      if (!Array.isArray(c.avatarPairs)) c.avatarPairs = [];
+      c.avatarPairs = c.avatarPairs.filter(function (p) {
+        return p && typeof p === 'object' && typeof p.me === 'string' && typeof p.ta === 'string' && p.me && p.ta;
+      }).map(function (p) {
+        return { id: String(p.id || uid()), me: p.me, ta: p.ta };
+      });
+      autoAvatarCfg(c);
       c.messages = normalizeMessages(c.messages);
       if (typeof c.lastId !== 'string') c.lastId = null;
     });
@@ -3538,6 +3570,122 @@ body.theme-night .glyph-music{background:linear-gradient(160deg,#4a2338,#3a1b2c)
       img.src = reader.result;
     };
     reader.readAsDataURL(file);
+  }
+
+  /* TA 自己换情头：导入头像对，每 1-8 小时随机换一次 */
+  const AUTO_AVATAR_CHANCE = 0.7;
+  const AUTO_AVATAR_PAIR_LIMIT = 12;
+
+  function autoAvatarDayKey() {
+    const d = new Date();
+    return d.getFullYear() + '-' + (d.getMonth() + 1) + '-' + d.getDate();
+  }
+
+  function autoAvatarCfg(c) {
+    if (!c) return null;
+    if (!c.autoAvatar || typeof c.autoAvatar !== 'object') c.autoAvatar = {};
+    const a = c.autoAvatar;
+    if (typeof a.enabled !== 'boolean') a.enabled = false;
+    if (a.perDay !== 1 && a.perDay !== 2 && a.perDay !== 3) a.perDay = 1;
+    if (typeof a.nextAt !== 'number' || !isFinite(a.nextAt)) a.nextAt = 0;
+    if (typeof a.day !== 'string') a.day = '';
+    if (typeof a.count !== 'number' || !isFinite(a.count) || a.count < 0) a.count = 0;
+    return a;
+  }
+
+  function avatarPairsOf(c) {
+    if (!c) return [];
+    if (!Array.isArray(c.avatarPairs)) c.avatarPairs = [];
+    c.avatarPairs = c.avatarPairs.filter(function (p) {
+      return p && typeof p === 'object' && typeof p.me === 'string' && typeof p.ta === 'string' && p.me && p.ta;
+    }).map(function (p) {
+      return { id: String(p.id || uid()), me: p.me, ta: p.ta };
+    });
+    return c.avatarPairs;
+  }
+
+  function nextAvatarDelay() {
+    return (1 + Math.floor(Math.random() * 8)) * 3600000;
+  }
+
+  function scheduleAutoAvatar(c) {
+    const a = autoAvatarCfg(c);
+    a.nextAt = Date.now() + nextAvatarDelay();
+  }
+
+  function changeAvatarPair(c) {
+    const pairs = avatarPairsOf(c);
+    if (!pairs.length) return false;
+    let pool = pairs.filter(function (p) { return p.ta !== c.avatar || p.me !== c.userAvatar; });
+    if (!pool.length) pool = pairs;
+    const pair = pool[Math.floor(Math.random() * pool.length)];
+    c.avatar = pair.ta;
+    c.userAvatar = pair.me;
+    if (c === activeContact()) {
+      state.avatar = pair.ta;
+      state.userAvatar = pair.me;
+    }
+    const a = autoAvatarCfg(c);
+    const day = autoAvatarDayKey();
+    if (a.day !== day) { a.day = day; a.count = 0; }
+    a.count += 1;
+    scheduleAutoAvatar(c);
+    updateIdentity(false);
+    renderContactList();
+    pushMessageTo(c, 'sys', 'note', 'TA 换上了新的情头');
+    save();
+    return true;
+  }
+
+  function autoAvatarTick() {
+    let touched = false;
+    state.contacts.forEach(function (c) {
+      const a = autoAvatarCfg(c);
+      if (!a.enabled) return;
+      const pairs = avatarPairsOf(c);
+      if (!pairs.length) return;
+      const now = Date.now();
+      if (a.nextAt <= 0) { scheduleAutoAvatar(c); touched = true; return; }
+      if (now < a.nextAt) return;
+      const day = autoAvatarDayKey();
+      if (a.day !== day) { a.day = day; a.count = 0; }
+      if (a.count >= a.perDay) {
+        const next = new Date();
+        next.setHours(24, 0, 0, 0);
+        a.nextAt = next.getTime() + nextAvatarDelay();
+        touched = true;
+        return;
+      }
+      if (Math.random() < AUTO_AVATAR_CHANCE) {
+        changeAvatarPair(c);
+      } else {
+        scheduleAutoAvatar(c);
+      }
+      touched = true;
+    });
+    if (touched) save();
+  }
+
+  function enableAutoAvatar(c, on) {
+    const a = autoAvatarCfg(c);
+    a.enabled = !!on;
+    const day = autoAvatarDayKey();
+    if (a.day !== day) { a.day = day; a.count = 0; }
+    if (a.enabled && (!a.nextAt || a.nextAt <= Date.now())) scheduleAutoAvatar(c);
+    save();
+    return a;
+  }
+
+  function setAutoAvatarFreq(c, n) {
+    const a = autoAvatarCfg(c);
+    a.perDay = n === 2 || n === 3 ? n : 1;
+    if (a.count >= a.perDay) {
+      const next = new Date();
+      next.setHours(24, 0, 0, 0);
+      a.nextAt = next.getTime() + nextAvatarDelay();
+    }
+    save();
+    return a;
   }
 
   /* 发送与防抖（每个联系人各自排队，互不打断） */
@@ -5579,7 +5727,7 @@ body.theme-night .glyph-music{background:linear-gradient(160deg,#4a2338,#3a1b2c)
   function openProfile() {
     const c = activeContact();
     if (!c) return;
-    pfTemp = { avatar: c.avatar || '', userAvatar: c.userAvatar || '' };
+    pfTemp = { avatar: c.avatar || '', userAvatar: c.userAvatar || '', dirtyAvatar: false, dirtyUserAvatar: false };
     openModal('聊天资料',
       '<div class="pf-avatars">' +
         '<div class="pf-person"><div class="avatar" id="pfCharAvatar"></div><span>TA 的头像</span><button class="chip" id="pfPickCharAvatar">更换</button></div>' +
@@ -5588,12 +5736,37 @@ body.theme-night .glyph-music{background:linear-gradient(160deg,#4a2338,#3a1b2c)
       '<label class="field"><span>TA 的名字</span><input id="pfCharName" maxlength="12" placeholder="梦角"></label>' +
       '<label class="field"><span>我的名字</span><input id="pfUserName" maxlength="12" placeholder="我"></label>' +
       '<div class="field"><span>这个联系人的聊天背景（只对它生效）</span><div class="bg-grid" id="pfBgGrid"></div>' +
-      '<div class="lib-actions" style="margin:8px 0 0;"><button class="chip" id="pfAddBg">导入背景图</button></div></div>',
+      '<div class="lib-actions" style="margin:8px 0 0;"><button class="chip" id="pfAddBg">导入背景图</button></div></div>' +
+      '<div class="field"><span>情头库 · 给 TA 和你</span>' +
+        '<div class="pair-grid" id="pfPairGrid"></div>' +
+        '<div class="pair-add">' +
+          '<span class="pair-draft" id="pfPairDraft"></span>' +
+          '<label class="chip">选 TA 的图<input type="file" id="pfPairTa" accept="image/*" hidden></label>' +
+          '<label class="chip">选我的图<input type="file" id="pfPairMe" accept="image/*" hidden></label>' +
+          '<button class="chip" id="pfAddPair" type="button" disabled>添加这一对</button>' +
+        '</div>' +
+        '<span class="hint">一次选两张组成一对，最多 12 对。TA 换头像时会同时换上你们俩，并在聊天里留一条记录。</span>' +
+      '</div>' +
+      '<div class="field" style="flex-direction:row;align-items:center;justify-content:space-between;gap:14px;">' +
+        '<div style="display:flex;flex-direction:column;gap:3px;min-width:0;">' +
+          '<span style="font-size:13px;color:var(--text);">允许 TA 自己换情头</span>' +
+          '<span class="hint">开启后，TA 会在 1–8 小时内随机挑个时间换一对。</span>' +
+        '</div>' +
+        '<button class="sw" id="pfAutoAvatar" aria-label="自动换情头开关"></button>' +
+      '</div>' +
+      '<div class="field"><span>每天换几次</span>' +
+        '<div class="pair-add" id="pfFreqRow">' +
+          '<button class="chip" type="button" data-freq="1">一天 1 次</button>' +
+          '<button class="chip" type="button" data-freq="2">一天 2 次</button>' +
+          '<button class="chip" type="button" data-freq="3">一天 3 次</button>' +
+        '</div>' +
+        '<span class="hint">每次间隔随机 1–8 小时；也有概率这次不换，等下个时段。</span>' +
+      '</div>',
       '保存', function () {
         c.name = ($('pfCharName') ? $('pfCharName').value.trim() : '');
         c.userName = ($('pfUserName') ? $('pfUserName').value.trim() : '');
-        c.avatar = pfTemp.avatar;
-        c.userAvatar = pfTemp.userAvatar;
+        if (pfTemp.dirtyAvatar) c.avatar = pfTemp.avatar;
+        if (pfTemp.dirtyUserAvatar) c.userAvatar = pfTemp.userAvatar;
         if (c === activeContact()) {
           state.charName = c.name;
           state.userName = c.userName;
@@ -5616,6 +5789,107 @@ body.theme-night .glyph-music{background:linear-gradient(160deg,#4a2338,#3a1b2c)
     $('pfPickUserAvatar').addEventListener('click', () => $('userAvatarInput').click());
     $('pfAddBg').addEventListener('click', () => $('chatBgInput').click());
     $('pfBgGrid').addEventListener('click', e => onBgClick('chat', e));
+
+    /* 情头库与自动换头像 */
+    const pairDraft = { me: '', ta: '' };
+    const autoCfg = autoAvatarCfg(c);
+
+    function renderPairDraft() {
+      const box = $('pfPairDraft');
+      if (!box) return;
+      box.innerHTML =
+        '<span class="pair-thumb">' + (pairDraft.ta ? '<img src="' + esc(pairDraft.ta) + '" alt="">' : 'TA') + '</span>' +
+        '<span class="pair-link">+</span>' +
+        '<span class="pair-thumb">' + (pairDraft.me ? '<img src="' + esc(pairDraft.me) + '" alt="">' : '我') + '</span>';
+      const add = $('pfAddPair');
+      if (add) add.disabled = !(pairDraft.me && pairDraft.ta);
+    }
+
+    function renderPairGrid() {
+      const grid = $('pfPairGrid');
+      if (!grid) return;
+      const list = avatarPairsOf(c);
+      if (!list.length) {
+        grid.innerHTML = '<span class="pair-empty">还没有情头，先选两张图吧。</span>';
+        return;
+      }
+      grid.innerHTML = list.map(function (p) {
+        return '<div class="pair-card">' +
+          '<img src="' + esc(p.ta) + '" alt="TA">' +
+          '<img class="pair-ta" src="' + esc(p.me) + '" alt="我">' +
+          '<button class="pair-del" type="button" data-del="' + esc(p.id) + '" aria-label="删除这对情头">×</button>' +
+        '</div>';
+      }).join('');
+    }
+
+    function paintFreq() {
+      const a = autoAvatarCfg(c);
+      document.querySelectorAll('#pfFreqRow [data-freq]').forEach(function (b) {
+        b.classList.toggle('active', Number(b.dataset.freq) === a.perDay);
+      });
+    }
+
+    renderPairDraft();
+    renderPairGrid();
+    paintFreq();
+    $('pfAutoAvatar').classList.toggle('off', !autoCfg.enabled);
+
+    $('pfPairTa').addEventListener('change', function (e) {
+      const f = e.target.files && e.target.files[0];
+      if (!f) return;
+      readAvatarFile(f, function (url) {
+        if (!url) { toast('这张图片读不出来，换一张试试'); return; }
+        pairDraft.ta = url;
+        renderPairDraft();
+      });
+      e.target.value = '';
+    });
+    $('pfPairMe').addEventListener('change', function (e) {
+      const f = e.target.files && e.target.files[0];
+      if (!f) return;
+      readAvatarFile(f, function (url) {
+        if (!url) { toast('这张图片读不出来，换一张试试'); return; }
+        pairDraft.me = url;
+        renderPairDraft();
+      });
+      e.target.value = '';
+    });
+    $('pfAddPair').addEventListener('click', function () {
+      const list = avatarPairsOf(c);
+      if (!pairDraft.me || !pairDraft.ta) return;
+      if (list.length >= AUTO_AVATAR_PAIR_LIMIT) { toast('最多放 12 对情头'); return; }
+      list.push({ id: uid(), me: pairDraft.me, ta: pairDraft.ta });
+      pairDraft.me = '';
+      pairDraft.ta = '';
+      const a = autoAvatarCfg(c);
+      if (a.enabled && (!a.nextAt || a.nextAt <= Date.now())) scheduleAutoAvatar(c);
+      save();
+      renderPairDraft();
+      renderPairGrid();
+      toast('情头已加入，TA 会自己挑');
+    });
+    $('pfPairGrid').addEventListener('click', function (e) {
+      const btn = e.target.closest('[data-del]');
+      if (!btn) return;
+      const id = btn.getAttribute('data-del');
+      c.avatarPairs = avatarPairsOf(c).filter(function (p) { return p.id !== id; });
+      save();
+      renderPairGrid();
+      toast('已删除这对情头');
+    });
+    $('pfAutoAvatar').addEventListener('click', function () {
+      const a = enableAutoAvatar(c, !autoAvatarCfg(c).enabled);
+      this.classList.toggle('off', !a.enabled);
+      if (a.enabled && !avatarPairsOf(c).length) toast('先导入一对情头，TA 才有得换');
+      else toast(a.enabled ? '已允许 TA 自己换情头' : '已关闭自动换情头');
+    });
+    $('pfFreqRow').addEventListener('click', function (e) {
+      const b = e.target.closest('[data-freq]');
+      if (!b) return;
+      const a = setAutoAvatarFreq(c, Number(b.dataset.freq));
+      paintFreq();
+      toast('TA 每天最多换 ' + a.perDay + ' 次');
+    });
   }
 
   $('headerCenter').addEventListener('click', nudgeReply);
@@ -5710,6 +5984,7 @@ body.theme-night .glyph-music{background:linear-gradient(160deg,#4a2338,#3a1b2c)
       readAvatarFile(f, function (url) {
         if (!url) return;
         pfTemp.avatar = url;
+        pfTemp.dirtyAvatar = true;
         paintAvatar($('pfCharAvatar'), url, '');
         paintAvatar($('bannerAvatar'), url, '');
       });
@@ -5722,6 +5997,7 @@ body.theme-night .glyph-music{background:linear-gradient(160deg,#4a2338,#3a1b2c)
       readAvatarFile(f, function (url) {
         if (!url) return;
         pfTemp.userAvatar = url;
+        pfTemp.dirtyUserAvatar = true;
         paintAvatar($('pfUserAvatar'), url, '');
       });
     }
@@ -7229,6 +7505,9 @@ body.theme-night .glyph-music{background:linear-gradient(160deg,#4a2338,#3a1b2c)
 
     tickHomeClock();
     setInterval(tickHomeClock, 20000);
+
+    autoAvatarTick();
+    setInterval(autoAvatarTick, 60000);
 
     if (migratedFromKey) {
       setTimeout(function () {
