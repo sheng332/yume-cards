@@ -1488,6 +1488,23 @@ body.theme-night .glyph-music{background:linear-gradient(160deg,#4a2338,#3a1b2c)
 </head>
 <body class="theme-imessage">
 
+<script>
+(function () {
+  function syncThemeColor() {
+    try {
+      var m = document.querySelector('meta[name="theme-color"]');
+      if (!m) return;
+      var bg = getComputedStyle(document.body).getPropertyValue('--app-bg').trim();
+      if (bg) m.setAttribute('content', bg);
+    } catch (e) {}
+  }
+  syncThemeColor();
+  try {
+    new MutationObserver(syncThemeColor).observe(document.body, { attributes: true, attributeFilter: ['class'] });
+  } catch (e) {}
+})();
+</script>
+
 <div class="app">
   <!-- 进入聊天 / 启动加载 -->
   <div class="app-loading" id="appLoading">
