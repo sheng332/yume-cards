@@ -1285,12 +1285,12 @@ body.theme-night .glyph-music{background:linear-gradient(160deg,#4a2338,#3a1b2c)
 /* 设置内部 */
 .field{display:flex;flex-direction:column;gap:7px;flex:none;}
 .field > span{font-size:12.5px;color:var(--muted);}
-.field input[type=text], .field input[type=number]{
+.field input[type=text], .field input[type=number], .field select{
   padding:10px 13px;border-radius:11px;
   background:var(--app-bg);border:1px solid var(--line);
   color:var(--text);font-size:14px;outline:none;transition:.2s;
 }
-.field input[type=text]:focus, .field input[type=number]:focus{border-color:var(--accent);}
+.field input[type=text]:focus, .field input[type=number]:focus, .field select:focus{border-color:var(--accent);}
 .field input[type=color]{
   width:100%;height:40px;padding:3px;border-radius:11px;cursor:pointer;
   background:var(--app-bg);border:1px solid var(--line);
@@ -6369,12 +6369,6 @@ body.theme-night .glyph-music{background:linear-gradient(160deg,#4a2338,#3a1b2c)
     return letter;
   }
 
-  function writeLetter() {
-    const c = activeContact();
-    if (!c) return null;
-    return deliverLetter(composeLetter(c), c, false);
-  }
-
   function userLetterDelayMs() {
     const cfg = state.letterCfg;
     const lo = Math.max(1, cfg.minReplyMin) * 60000;
@@ -6429,11 +6423,24 @@ body.theme-night .glyph-music{background:linear-gradient(160deg,#4a2338,#3a1b2c)
       return x && !x.off && !isGroupOff(x.group) && typeof x.text === 'string' && x.text.trim();
     });
     if (!poolReady) return;
-    const latest = state.letters.reduce(function (m, l) {
-      return l.role !== 'me' ? Math.max(m, l.ts || 0) : m;
-    }, 0);
-    if (latest && Date.now() - latest < cfg.intervalHours * 3600000) return;
-    writeLetter();
+    const interval = cfg.intervalHours * 3600000;
+    const targets = state.singleMode ? [activeContact()].filter(Boolean) : state.contacts.slice();
+    let changed = false;
+    targets.forEach(function (c) {
+      const latest = state.letters.reduce(function (m, l) {
+        return (l.role !== 'me' && l.cid === c.id) ? Math.max(m, l.ts || 0) : m;
+      }, 0);
+      if (latest && Date.now() - latest < interval) return;
+      const letter = composeLetter(c);
+      if (!letter) return;
+      deliverLetter(letter, c, false);
+      changed = true;
+    });
+    if (changed) {
+      save();
+      renderLettersIfOpen();
+      updateLetterBadge();
+    }
   }
 
   function openLetters(focusId) {
@@ -6501,13 +6508,20 @@ body.theme-night .glyph-music{background:linear-gradient(160deg,#4a2338,#3a1b2c)
     if (!c) { toast('先添加一个梦角吧'); return; }
     const cfg = state.letterCfg;
     const isReply = !!replyToId;
-    openModal(isReply ? '回信给 ' + (c.name || '梦角') : '写信给 ' + (c.name || '梦角'),
+    const canPick = !isReply && !state.singleMode && state.contacts.length > 1;
+    const picker = canPick ? '<label class="field"><span>写给</span><select id="lcContact">' +
+      state.contacts.map(function (x) {
+        return '<option value="' + esc(x.id) + '"' + (x.id === c.id ? ' selected' : '') + '>' + esc(x.name || '梦角') + '</option>';
+      }).join('') + '</select></label>' : '';
+    openModal(isReply ? '回信给 ' + (c.name || '梦角') : '写信',
+      picker +
       '<label class="field"><span>想说的话</span><textarea id="lcWriteText" placeholder="写点什么…"></textarea></label>' +
       '<p class="hint">寄出后约 ' + cfg.minReplyMin + '~' + cfg.maxReplyMin + ' 分钟会收到回信，可在信件设置里调整。</p>',
       '寄出', function () {
         const text = String(($('lcWriteText') && $('lcWriteText').value) || '').trim();
         if (!text) { toast('先写点内容吧'); return false; }
-        sendUserLetter(c, text, replyToId || '');
+        const target = canPick ? (contactById($('lcContact').value) || c) : c;
+        sendUserLetter(target, text, replyToId || '');
         toast('已寄出，等 TA 回信吧');
         return true;
       });
